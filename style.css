@@ -97,12 +97,14 @@ p{
     height: 100%;
     max-width: 1300px;
     padding: 0 10px;
+    
 
 }
 
 #header .nav-list ul{
+    
     list-style: none;
-    position: absolute;
+    position: fixed;
     background-color: rgb(31, 30, 30);
     width: 100vw;
     height: 100vh;
@@ -218,6 +220,7 @@ p{
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 50px;
+    
     justify-content: flex-start
 }
 #hero::after{
@@ -239,6 +242,7 @@ p{
     color: transparent;
     animation: text_reveal .5s ease forwards;
     animation-delay: 1s;
+    margin-top: 30px;
 }
 #hero h1:nth-child(1){
     animation-delay: 1s;
@@ -609,7 +613,7 @@ p{
 @media (min-width:768px){
     .cta{
         font-size: 2.5rem;
-        padding: 15px 55px;
+        padding: 20px 60px;
     }
     h1.section-title{
         font-size: 7rem;
@@ -617,7 +621,7 @@ p{
 
     /* Hero */
     #hero h1{
-        font-size: 4.4rem;
+        font-size: 7rem;
     }
     /* Kraj Heroa */
 
