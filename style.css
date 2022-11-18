@@ -83,7 +83,7 @@ p{
 #header .header{
     min-height: 8vh;
     background-color:rgba(31, 30, 30, 0.24);
-    transition: .3 ease background-color;
+    transition: .5s ease background-color;
 }
 #header .header{
     min-height: 8vh;
@@ -609,7 +609,7 @@ p{
 @media (min-width:768px){
     .cta{
         font-size: 2.5rem;
-        padding: 20px 60px;
+        padding: 15px 55px;
     }
     h1.section-title{
         font-size: 7rem;
@@ -617,7 +617,7 @@ p{
 
     /* Hero */
     #hero h1{
-        font-size: 7rem;
+        font-size: 5rem;
     }
     /* Kraj Heroa */
 
