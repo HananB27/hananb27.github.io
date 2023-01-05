@@ -578,12 +578,15 @@ p{
     margin: 0 10px;
 }
 #footer .social-item img{
+    
     filter: grayscale(1);
 }
 #footer .social-item:hover img{
-    filter: grayscale(1);
+    transition: 0.3s ease filter;
     color: cadetblue;
-    transition: .3 ease filter;
+    filter: grayscale(0.1);
+    
+    
 }
 #footer p{
     color: white;
