@@ -582,6 +582,7 @@ p{
 }
 #footer .social-item:hover img{
     filter: grayscale(1);
+    color: cadetblue;
     transition: .3 ease filter;
 }
 #footer p{
