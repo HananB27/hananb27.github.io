@@ -377,7 +377,8 @@ p{
 	border-radius: 10px;
 }
 #projects .project-info {
-	padding: 5%;
+    padding: 10%;
+    width: 100%;
 	flex-basis: 50%;
 	height: 120%;
 	display: flex;
@@ -401,21 +402,20 @@ p{
 #projects .project-info p {
 	color: white;
 }
+
 #projects li{
-    
-    margin: 10px;
     font-size: 1.6rem;
     
 }
 #projects .project-img {
 	flex-basis: 50%;
-	height: 400px;
+	width: 100%;
 	overflow: hidden;
 	position: relative;
 }
 #projects .link{
     flex-basis: 45%;
-    height: 400px;
+    height: 100%;
 	overflow: hidden;
 	position: relative;
 }
@@ -663,11 +663,16 @@ p{
         width: 100%;
         border-radius: 0;
     }
+    
     #projects .all-projects .project-info{
+        
         height: 100%;
     }
     #projects .all-projects .project-img{
         height: 100%;
+    }
+    #projects .project-info{
+        padding: 10%;
     }
     /* Kraj Projects Sectiona */
 
@@ -759,6 +764,9 @@ p{
     #services .service-bottom .service-item{
         flex-basis: 22%;
         margin: 1.5%;
+    }
+    #projects .project-info{
+        padding: 5%;
     }
 }
 /* Kraj Media Query za komp */
