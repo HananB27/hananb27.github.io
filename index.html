@@ -1,315 +1,390 @@
 <!DOCTYPE html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+        <link rel="stylesheet" href="zlj.css" />
 
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="stylesheet" href="zlj.css">
+        <title>My Website</title>
+    </head>
 
-    <title>My Website</title>
-</head>
+    <body>
+        <!-- Header -->
+        <section id="header">
+            <div class="header container">
+                <div class="nav-bar">
+                    <div class="brand">
+                        <a href="#hero">
+                            <h1><span>H</span>anan <span>B</span>ajramovic</h1>
+                        </a>
+                    </div>
+                    <div class="nav-list">
+                        <div class="hamburger">
+                            <div class="bar"></div>
+                        </div>
+                        <ul>
+                            <li><a href="#hero" data-after="Home">Home</a></li>
+                            <li>
+                                <a href="#services" data-after="Services"
+                                    >Services</a
+                                >
+                            </li>
+                            <li>
+                                <a href="#projects" data-after="Projects"
+                                    >Projects</a
+                                >
+                            </li>
+                            <li>
+                                <a href="#about" data-after="About">About</a>
+                            </li>
+                            <li>
+                                <a href="#contact" data-after="Contact"
+                                    >Contact</a
+                                >
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Kraj Headera -->
+        <!-- Hero section -->
+        <section id="hero">
+            <div class="hero container">
+                <div>
+                    <h1>Hello, <span></span></h1>
+                    <h1>My Name is <span></span></h1>
+                    <h1>Hanan <span></span></h1>
+                    <a href="#projects" type="button" class="cta">Portfolio</a>
+                </div>
+            </div>
+        </section>
+        <!-- Kraj Hero sectiona -->
 
-<body>
-    <!-- Header -->
-    <section id="header">
-        <div class="header container">
-            <div class="nav-bar">
+        <!-- Service Section -->
+        <section id="services">
+            <div class="services container">
+                <div class="service-top">
+                    <h1 class="section-title">Serv<span>i</span>ces</h1>
+                    <p>
+                        I specialize in Django, React, and Next.js, crafting
+                        dynamic web applications with a focus on performance and
+                        scalability. With my background in software engineering
+                        and passion for web development, I deliver tailored
+                        solutions that cater to my clients' needs.
+                    </p>
+                </div>
+                <div class="service-bottom">
+                    <div id="items">
+                        <div class="service-item">
+                            <div class="icon ag">
+                                <img src="angular.png" />
+                            </div>
+                            <h2>Angular</h2>
+                            <p>
+                                My development service specializes in creating
+                                user-friendly and visually appealing websites
+                                for businesses and individuals. Leveraging
+                                Angular, I craft custom websites that are
+                                optimized for performance, effectively
+                                communicating your message and meeting the needs
+                                of your target audience.
+                            </p>
+                        </div>
+                        <div class="service-item">
+                            <div class="icon">
+                                <img src="icons8-javascript-logo-100.png" />
+                            </div>
+                            <h2>JavaScript</h2>
+                            <p>
+                                I specialize in using JavaScript to create
+                                dynamic and interactive websites. From
+                                animations to full-fledged web applications, I
+                                have the experience to bring your project to
+                                life. I utilize the latest frameworks and
+                                libraries to ensure that your site is not only
+                                visually appealing, but also efficient and
+                                scalable.
+                            </p>
+                        </div>
+                        <div class="service-item">
+                            <div class="icon">
+                                <img src="icons8-django-96.png" />
+                            </div>
+                            <h2>Django</h2>
+                            <p>
+                                I am proficient in using Django, a powerful
+                                Python web framework, to build reliable and
+                                scalable web applications. Whether you need a
+                                custom application from scratch or help with an
+                                existing Django project, I have the experience
+                                and expertise to deliver high-quality results.
+                            </p>
+                        </div>
+                        <div class="service-item">
+                            <div class="icon">
+                                <img src="icons8-react-90.png" />
+                            </div>
+                            <h2>React</h2>
+                            <p>
+                                I am skilled in using React, a JavaScript
+                                library for building user interfaces, to create
+                                fast and efficient web applications. Whether
+                                you're looking to build a new web application
+                                from the ground up or add React to your existing
+                                project, I have the experience and expertise to
+                                deliver high-quality results.
+                            </p>
+                        </div>
+                        <div class="service-item">
+                            <div class="icon">
+                                <img src="icons8-next.js-96.png" />
+                            </div>
+                            <h2>Next.js</h2>
+                            <p>
+                                I am proficient in using Next.js, a powerful
+                                React framework for building server-rendered and
+                                statically exported React applications. With
+                                Next.js, I am able to create web applications
+                                that are fast, SEO-friendly, and easy to
+                                maintain. Whether you're looking to build a new
+                                web application from scratch or migrate an
+                                existing one to Next.js, I have the skills and
+                                experience to deliver top-notch results.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- End of Service section -->
+
+        <!-- Projects section -->
+        <section id="projects">
+            <div class="projects container">
+                <div class="projects-header">
+                    <h1 class="section-title">Recent <span>Projects</span></h1>
+                </div>
+                <div class="all-projects">
+                    <div class="project-item">
+                        <div class="project-info">
+                            <h1>Google Search</h1>
+
+                            <ul>
+                                <li>
+                                    Website with three search pages: Google
+                                    Search, Google Image Search, and Google
+                                    Advanced Search
+                                </li>
+                                <li>
+                                    Each page allows users to input a query and
+                                    be taken to search results
+                                </li>
+                                <li>
+                                    "I'm Feeling Lucky" button on Google Search
+                                    page takes users directly to first search
+                                    result for their query
+                                </li>
+                                <li>Website has Google-like design elements</li>
+                            </ul>
+                        </div>
+                        <div class="link">
+                            <a href="https://github.com/HananB27/Google-search">
+                                <div class="project-img">
+                                    <img
+                                        src="https://images.pexels.com/photos/40185/mac-freelancer-macintosh-macbook-40185.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+                                        alt="img"
+                                    />
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="project-item">
+                        <div class="project-info">
+                            <h1>Auction site</h1>
+
+                            <ul>
+                                <li>Create, view, and bid on listings</li>
+                                <li>
+                                    Default route displaying active listings
+                                </li>
+                                <li>Individual listing pages</li>
+                                <li>Watchlist feature for signed-in users</li>
+                                <li>Category feature</li>
+                                <li>Comments feature for signed-in users</li>
+                                <li>
+                                    Admin interface for managing listings,
+                                    comments, and bids
+                                </li>
+                                <li>
+                                    At least three models in addition to the
+                                    User model
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="link">
+                            <a
+                                href="https://github.com/HananB27/E-Commerce-Django-website"
+                            >
+                                <div class="project-img">
+                                    <img
+                                        src="https://images.pexels.com/photos/5668473/pexels-photo-5668473.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+                                        alt="img"
+                                    />
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="project-item">
+                        <div class="project-info">
+                            <h1>Wiki site</h1>
+
+                            <ul>
+                                <li>View and edit encyclopedia entries</li>
+                                <li>Search for entries</li>
+                                <li>Create new entries</li>
+                                <li>Index page with clickable entry names</li>
+                                <li>
+                                    Search feature that displays list of
+                                    matching entries
+                                </li>
+                                <li>
+                                    "Random Page" button that takes user to
+                                    random entry
+                                </li>
+                                <li>Markdown content converted to HTML</li>
+                                <li>"Edit Page" feature for each entry</li>
+                                <li>
+                                    Error page displayed if entry does not exist
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="link">
+                            <a
+                                href="https://github.com/HananB27/Wikipedia-made-with-Django"
+                            >
+                                <div class="project-img">
+                                    <img
+                                        src="https://images.pexels.com/photos/69004/pexels-photo-69004.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+                                        alt="img"
+                                    />
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="project-item">
+                        <div class="project-info">
+                            <h1>Mail</h1>
+
+                            <ul>
+                                <li>Email client</li>
+                                <li>Sends and receives emails</li>
+                                <li>Views and archives emails</li>
+                                <li>Replies to emails</li>
+                                <li>Uses API</li>
+                                <li>Displays email information</li>
+                                <li>Archives and unarchives emails</li>
+                                <li>Pre-fills reply form</li>
+                            </ul>
+                        </div>
+                        <div class="link">
+                            <a href="https://github.com/HananB27/Mail">
+                                <div class="project-img">
+                                    <img
+                                        src="https://images.pexels.com/photos/5605061/pexels-photo-5605061.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+                                        alt="img"
+                                    />
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Kraj Projects sectiona -->
+
+        <!-- About section -->
+        <section id="about">
+            <div class="about container">
+                <div class="col-left">
+                    <div class="about-img">
+                        <img src="slika.jpg" alt="img" />
+                    </div>
+                </div>
+                <div class="col-right">
+                    <h1 class="section-title">About <span>me</span></h1>
+                    <h2>Full Stack Developer</h2>
+                    <p>
+                        I am currently pursuing a Bachelor’s degree in Software
+                        Engineering at the International University of Sarajevo,
+                        specializing in developing innovative solutions for web
+                        applications. Known for my strong problem-solving
+                        skills, I am committed to enhancing user experience and
+                        functionality through technology.
+                    </p>
+                    <a href="Resume.pdf" type="button" class="btn" download
+                        >Download Resume</a
+                    >
+                </div>
+            </div>
+        </section>
+        <!-- Kraj About sectiona -->
+
+        <!-- Contact Section -->
+        <section id="contact">
+            <div class="contact dontainer">
+                <div>
+                    <h1 class="section-title">Contact <span>info</span></h1>
+                </div>
+                <div class="contact-items">
+                    <div class="contact-item">
+                        <div class="icon">
+                            <img src="email.png" alt="icon" />
+                        </div>
+                        <div class="contact-info">
+                            <h1>E-Mail</h1>
+                            <h2>hananbajramovic075@gmail.com</h2>
+                            <h2>Phone: +387 61 501 740</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Kraj Contact sectiona -->
+
+        <!-- Footer -->
+        <section id="footer">
+            <div class="footer container">
                 <div class="brand">
-                    <a href="#hero">
-                        <h1><span>H</span>anan <span>B</span>ajramovic</h1>
-                    </a>
+                    <h1><span>H</span>anan <span>B</span>ajramovic</h1>
                 </div>
-                <div class="nav-list">
-                    <div class="hamburger">
-                        <div class="bar"></div>
+                <h2>Your Complete Web Solution</h2>
+                <div class="social-icon">
+                    <div class="social-item">
+                        <a href="https://www.instagram.com/hananb_27/"
+                            ><img src="instagram.png" alt=""
+                        /></a>
                     </div>
-                    <ul>
-                        <li><a href="#hero" data-after="Home">Home</a></li>
-                        <li><a href="#services" data-after="Services">Services</a></li>
-                        <li><a href="#projects" data-after="Projects">Projects</a></li>
-                        <li><a href="#about" data-after="About">About</a></li>
-                        <li><a href="#contact" data-after="Contact">Contact</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </section>
-    <!-- Kraj Headera -->
-    <!-- Hero section -->
-    <section id="hero">
-        <div class="hero container">
-            <div>
-                <h1>Hello, <span></span></h1>
-                <h1>My Name is <span></span></h1>
-                <h1>Hanan <span></span></h1>
-                <a href="#projects" type="button" class="cta">Portfolio</a>
-            </div>
-        </div>
-    </section>
-    <!-- Kraj Hero sectiona -->
-
-    <!-- Service Section -->
-    <section id="services">
-        <div class="services container">
-            <div class="service-top">
-                <h1 class="section-title">Serv<span>i</span>ces</h1>
-                <p>I utilize a diverse range of technologies including HTML, CSS, JavaScript, Django, React, and Next.js
-                    to craft stunning and effective websites for my clients. Whether you're in need of a simple brochure
-                    site or a full-fledged web application, I have the skills and experience to bring your vision to
-                    life. I work closely with my clients to ensure that each project meets their specific needs and
-                    exceeds their expectations.</p>
-            </div>
-            <div class="service-bottom">
-                <div id="items">
-                    <div class="service-item">
-                        <div class="icon"><img src="icons8-web-design-90.png" /></div>
-                        <h2>Web Design</h2>
-                        <p>My web design service specializes in creating visually stunning and user-friendly websites
-                            for
-                            businesses and individuals. Utilizing the latest technologies including HTML, CSS I am able
-                            to
-                            craft custom websites that not only look great, but
-                            also effectively communicate your message and meet the needs of your target audience.</p>
-
+                    <div class="social-item">
+                        <a href="https://github.com/HananB27"
+                            ><img src="github.png" alt=""
+                        /></a>
                     </div>
-                    <div class="service-item">
-                        <div class="icon"><img src="icons8-javascript-logo-100.png" /></div>
-                        <h2>JavaScript</h2>
-                        <p>I specialize in using JavaScript to create dynamic and interactive websites. From animations
-                            to
-                            full-fledged web applications, I have the experience to bring your project to life. I
-                            utilize
-                            the latest frameworks and libraries to ensure that your site is not only visually appealing,
-                            but
-                            also efficient and scalable.
-
-                        </p>
-
-                    </div>
-                    <div class="service-item">
-                        <div class="icon"><img src="icons8-django-96.png" /></div>
-                        <h2>Django</h2>
-                        <p>I am proficient in using Django, a powerful Python web framework, to build reliable and
-                            scalable
-                            web applications. Whether you need a custom application from scratch or help with an
-                            existing
-                            Django project, I have the experience and expertise to deliver high-quality results.</p>
-
-                    </div>
-                    <div class="service-item">
-                        <div class="icon"><img src="icons8-react-90.png" /></div>
-                        <h2>React</h2>
-                        <p>I am skilled in using React, a JavaScript library for building user interfaces, to create
-                            fast
-                            and efficient web applications. Whether you're looking to build a new web application from
-                            the
-                            ground up or add React to your existing project, I have the experience and expertise to
-                            deliver
-                            high-quality results.</p>
-
-                    </div>
-                    <div class="service-item">
-                        <div class="icon"><img src="icons8-next.js-96.png" /></div>
-                        <h2>Next.js</h2>
-                        <p>I am proficient in using Next.js, a powerful React framework for building server-rendered and
-                            statically exported React applications. With Next.js, I am able to create web applications
-                            that
-                            are fast, SEO-friendly, and easy to maintain. Whether you're looking to build a new web
-                            application from scratch or migrate an existing one to Next.js, I have the skills and
-                            experience
-                            to deliver top-notch results.</p>
-
-                    </div>
-
-                </div>
-            </div>
-
-        </div>
-    </section>
-    <!-- End of Service section -->
-
-    <!-- Projects section -->
-    <section id="projects">
-        <div class="projects container">
-            <div class="projects-header">
-                <h1 class="section-title">Recent <span>Projects</span></h1>
-            </div>
-            <div class="all-projects">
-                <div class="project-item">
-                    <div class="project-info">
-                        <h1>Google Search</h1>
-                    
-                        
-                        <ul>
-                            <li>Website with three search pages: Google Search, Google Image Search, and Google Advanced
-                                Search</li>
-                            <li>Each page allows users to input a query and be taken to search results</li>
-                            <li>"I'm Feeling Lucky" button on Google Search page takes users directly to first search
-                                result for their query</li>
-                            <li>Website has Google-like design elements</li>
-
-                        </ul>
-
-
-                    </div>
-                    <div class="link">
-                        <a href="https://github.com/HananB27/Google-search">
-                            <div class="project-img">
-
-                                <img src="https://images.pexels.com/photos/40185/mac-freelancer-macintosh-macbook-40185.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                                    alt="img">
-
-                            </div>
-                        </a>
+                    <div class="social-item">
+                        <a href="https://www.linkedin.com/in/hananb27-498683229"
+                            ><img src="linkedin.png" alt=""
+                        /></a>
                     </div>
                 </div>
-                <div class="project-item">
-                    <div class="project-info">
-
-                        <h1>Auction site</h1>
-                        
-                        
-                        <ul>
-                            <li>Create, view, and bid on listings</li>
-                            <li>Default route displaying active listings</li>
-                            <li>Individual listing pages</li>
-                            <li>Watchlist feature for signed-in users</li>
-                            <li>Category feature</li>
-                            <li>Comments feature for signed-in users</li>
-                            <li>Admin interface for managing listings, comments, and bids</li>
-                            <li>At least three models in addition to the User model</li>
-                        </ul>
-                    </div>
-                    <div class="link">
-                        <a href="https://github.com/HananB27/E-Commerce-Django-website">
-                            <div class="project-img">
-                                <img src="https://images.pexels.com/photos/5668473/pexels-photo-5668473.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                                    alt="img">
-                            </div>
-                        </a>
-                    </div>
-                </div>
-                <div class="project-item">
-                    <div class="project-info">
-                        <h1>Wiki site</h1>
-                        
-                   
-                        <ul>
-                            <li>View and edit encyclopedia entries</li>
-                            <li>Search for entries</li>
-                            <li>Create new entries</li>
-                            <li>Index page with clickable entry names</li>
-                            <li>Search feature that displays list of matching entries</li>
-                            <li>"Random Page" button that takes user to random entry</li>
-                            <li>Markdown content converted to HTML</li>
-                            <li>"Edit Page" feature for each entry</li>
-                            <li>Error page displayed if entry does not exist</li>
-                        </ul>
-                    </div>
-                    <div class="link">
-                        <a href="https://github.com/HananB27/Wikipedia-made-with-Django">
-                            <div class="project-img">
-                                <img src="https://images.pexels.com/photos/69004/pexels-photo-69004.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                                    alt="img">
-                            </div>
-                        </a>
-                    </div>
-                </div>
-
-                <div class="project-item">
-                    <div class="project-info">
-                        <h1>Mail</h1>
-                        
-                        
-                        <ul>
-                            <li>Email client</li>
-                            <li>Sends and receives emails</li>
-                            <li>Views and archives emails</li>
-                            <li>Replies to emails</li>
-                            <li>Uses API</li>
-                            <li>Displays email information</li>
-                            <li>Archives and unarchives emails</li>
-                            <li>Pre-fills reply form</li>
-                        </ul>
-                       
-                    </div>
-                    <div class="link">
-                        <a href="https://github.com/HananB27/Mail">
-                            <div class="project-img">
-                                <img src="https://images.pexels.com/photos/5605061/pexels-photo-5605061.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
-                                    alt="img">
-                            </div>
-                        </a>
-                    </div>
-
-                </div>
-                
+                <p>Copyright © Hanan Bajramovic. All rights reserved</p>
             </div>
-        </div>
-    </section>
-    <!-- Kraj Projects sectiona -->
-
-    <!-- About section -->
-    <section id="about">
-        <div class="about container">
-            <div class="col-left">
-                <div class="about-img">
-                    <img src="slika.jpg" alt="img">
-                </div>
-            </div>
-            <div class="col-right">
-                <h1 class="section-title">About <span>me</span></h1>
-                <h2>Full Stack Developer</h2>
-                <p>As a high school student from Bosnia and Herzegovina, I have always had a passion for technology and a desire to learn as much as I can about the field. This drive has led me to pursue a career as a full stack developer, where I can use my skills and knowledge to build and maintain websites and web applications. I am confident in my abilities and always willing to take on new challenges, which has allowed me to continuously improve and expand my skillset. I am dedicated to staying up to date on the latest technologies and best practices in the field, and I am excited to use my talents to make a positive impact in the world of technology.</p>
-                <a href="Resume.pdf" type="button" class="btn" download>Download Resume</a>
-            </div>
-        </div>
-    </section>
-    <!-- Kraj About sectiona -->
-
-    <!-- Contact Section -->
-    <section id="contact">
-        <div class="contact dontainer">
-            <div>
-                <h1 class="section-title">Contact <span>info</span></h1>
-            </div>
-            <div class="contact-items">
-                <div class="contact-item">
-                    <div class="icon"><img src="email.png" alt="icon"></div>
-                    <div class="contact-info">
-                        <h1>E-Mail</h1>
-                        <h2>hananbajramovic075@gmail.com</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-    <!-- Kraj Contact sectiona -->
-
-    <!-- Footer -->
-    <section id="footer">
-        <div class="footer container">
-            <div class="brand">
-                <h1><span>H</span>anan <span>B</span>ajramovic</h1>
-            </div>
-            <h2>Your Complete Web Solution</h2>
-            <div class="social-icon">
-                <div class="social-item">
-                    <a href="https://www.instagram.com/hananb_27/"><img src="instagram.png" alt=""></a>
-                </div>
-                <div class="social-item">
-                    <a href="https://github.com/HananB27"><img src="github.png" alt=""></a>
-                </div>
-                <div class="social-item">
-                    <a href="https://www.linkedin.com/in/hananb27-498683229"><img src="linkedin.png" alt=""></a>
-                </div>
-            </div>
-            <p>Copyright © Hanan Bajramovic. All rights reserved </p>
-        </div>
-    </section>
-    <!-- Kraj Footera -->
-    <script src="app.js"></script>
-</body>
-
+        </section>
+        <!-- Kraj Footera -->
+        <script src="app.js"></script>
+    </body>
 </html>

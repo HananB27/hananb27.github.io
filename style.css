@@ -327,8 +327,12 @@ p{
     z-index: -1;
 
 }
+#services .service-item .ag img {
+    filter: blur(0.2px); /* Adjust the pixel value to increase or decrease the blur */
+}
+
 #services .service-bottom .icon{
-    height: 60px;
+    height: 67px;
     width: 60px;
     margin-bottom: 20px;
 }
