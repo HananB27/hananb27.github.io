@@ -1,4 +1,5 @@
 import * as THREE from "../../vendor/three.module.min.js";
+import { smoothstep } from "../rules.js";
 
 /**
  * Hanan's low-poly avatar, authored entirely in code from the reference photo:
@@ -9,7 +10,7 @@ import * as THREE from "../../vendor/three.module.min.js";
  */
 const SKIN = 0xe0b08e;
 const SKIN_SHADE = 0xcf9a78;
-const HAIR = 0x2b1c18;
+const HAIR = 0x3a261e;
 const JACKET = 0xd8c6a0;
 const JACKET_SHADE = 0xc3b088;
 const KNIT = 0xf2ead9;
@@ -28,6 +29,72 @@ function mulberry32(seed) {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+/**
+ * Hair as a single mesh: a unit sphere pushed out over the skull into rounded
+ * curls. Over the face the surface sinks below the skin, so the hairline is
+ * simply where the two meet and it follows the curls without any clipping.
+ */
+function createHairGeometry() {
+  const WIDTH = 128;
+  const HEIGHT = 88;
+  const SKULL = [0.45, 0.55, 0.47];
+  const geometry = new THREE.SphereGeometry(1, WIDTH, HEIGHT);
+  const position = geometry.attributes.position;
+
+  const rand = mulberry32(11);
+  const CURLS = 84;
+  const curls = Array.from({ length: CURLS }, (_, i) => {
+    const y = 1 - (2 * (i + 0.5)) / CURLS;
+    const ring = Math.sqrt(1 - y * y);
+    const a = i * 2.39996 + (rand() - 0.5) * 0.35;
+    return { x: Math.cos(a) * ring, y, z: Math.sin(a) * ring, r: 0.27 * (0.85 + rand() * 0.3) };
+  });
+
+  // Crevices go dark and curl tops catch the light, so each curl reads even in low light.
+  const colors = new Float32Array(position.count * 3);
+  const crease = new THREE.Color(0x1a100c);
+  const crown = new THREE.Color(0x452d22);
+  const shade = new THREE.Color();
+
+  const v = new THREE.Vector3();
+  for (let i = 0; i < position.count; i++) {
+    v.fromBufferAttribute(position, i).normalize();
+    const skull = 1 / Math.hypot(v.x / SKULL[0], v.y / SKULL[1], v.z / SKULL[2]);
+    // Hairline: low on the forehead, around the ears, down to the nape.
+    const around = Math.atan2(Math.abs(v.x), v.z);
+    const hairline = 0.5 - 1.15 * smoothstep((around - 0.5) / (Math.PI - 0.5));
+    // Highest dome of any curl under this point.
+    let dome = 0;
+    for (const c of curls) {
+      const d2 = 2 * (1 - (v.x * c.x + v.y * c.y + v.z * c.z));
+      const q = d2 / (c.r * c.r);
+      if (q < 1) dome = Math.max(dome, Math.sqrt(1 - q));
+    }
+    // Curls reach past the hairline, which scallops the edge along the forehead.
+    const cover = smoothstep((v.y - hairline + 0.22 * dome - 0.06) / 0.05);
+    const thickness = 0.05 + 0.05 * Math.max(v.y, 0) + 0.13 * dome;
+    position.setXYZ(i, ...v.clone().multiplyScalar(skull - 0.05 * (1 - cover) + cover * thickness).toArray());
+    shade.lerpColors(crease, crown, dome * dome).toArray(colors, i * 3);
+  }
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  geometry.computeVertexNormals();
+
+  // A sphere's seam and poles are split vertices; weld their normals to hide the crease.
+  const normal = geometry.attributes.normal;
+  for (let row = 0; row <= HEIGHT; row++) {
+    const first = row * (WIDTH + 1);
+    const last = first + WIDTH;
+    v.fromBufferAttribute(normal, first).add(new THREE.Vector3().fromBufferAttribute(normal, last)).normalize();
+    normal.setXYZ(first, v.x, v.y, v.z);
+    normal.setXYZ(last, v.x, v.y, v.z);
+  }
+  for (let col = 0; col <= WIDTH; col++) {
+    normal.setXYZ(col, 0, 1, 0);
+    normal.setXYZ(HEIGHT * (WIDTH + 1) + col, 0, -1, 0);
+  }
+  return geometry;
 }
 
 function knitTexture() {
@@ -261,45 +328,19 @@ export function createAvatar(palette) {
   }
   add(new THREE.TorusGeometry(0.05, 0.016, 6, 12, Math.PI), frameMat, head, [0, 0.45, 0.47]);
 
-  // Simple curly hair: a smooth cap with a few even, rounded lobes in one tone.
-  const hairMat = mat(HAIR, { roughness: 0.9 });
-  const cap = add(new THREE.SphereGeometry(0.535, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.58), hairMat, head, [0, 0.46, -0.02], "avatar");
-  cap.scale.set(0.95, 1.1, 1.0);
-  cap.rotation.x = -0.42;
-  const lobes = [];
-  const LOBE_POINTS = 44;
-  for (let i = 0; i < LOBE_POINTS; i++) {
-    // Even spiral over the sphere, keeping the crown and back, leaving the face open.
-    const y = 1 - (2 * (i + 0.5)) / LOBE_POINTS;
-    const ring = Math.sqrt(1 - y * y);
-    const x = Math.cos(i * 2.39996) * ring;
-    const z = Math.sin(i * 2.39996) * ring;
-    if (y < -0.1 || (z > 0.25 && y < 0.62)) continue;
-    lobes.push([x * 0.48, 0.46 + y * 0.56, z * 0.51, i % 2 ? 0.16 : 0.185]);
-  }
-  const lobeMesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 2), hairMat, lobes.length);
-  const lobeDummy = new THREE.Object3D();
-  lobes.forEach(([x, y, z, r], i) => {
-    lobeDummy.position.set(x, y, z);
-    lobeDummy.scale.setScalar(r);
-    lobeDummy.updateMatrix();
-    lobeMesh.setMatrixAt(i, lobeDummy.matrix);
-  });
-  lobeMesh.castShadow = true;
-  lobeMesh.userData.part = "avatar";
-  hitMeshes.push(lobeMesh);
-  head.add(lobeMesh);
+  // Curly hair: one sculpted volume, so the silhouette stays clean from every angle.
+  const hair = add(createHairGeometry(), new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.78 }), head, [0, 0.44, 0], "avatar");
+  hair.receiveShadow = true;
 
-  // Over-ear headphones: padded band, sliders, shells, pads and a thin accent ring.
+  // Over-ear headphones: band resting on the hair, sliders, shells, pads and a thin accent ring.
   const phoneMat = mat(0x201e26, { roughness: 0.45, metalness: 0.25 });
   const band = add(new THREE.TorusGeometry(0.62, 0.042, 10, 36, Math.PI), phoneMat, head, [0, 0.42, -0.01], "avatar");
-  band.scale.set(0.98, 1.0, 1);
-  add(new THREE.TorusGeometry(0.595, 0.03, 8, 24, Math.PI * 0.55), mat(0x3a352f, { roughness: 1 }), head, [0, 0.42, -0.01]).rotation.z = Math.PI * 0.225;
+  band.scale.set(1.06, 1.34, 1);
   const ringMat = new THREE.MeshStandardMaterial({ color: palette.accent, emissive: palette.accent, emissiveIntensity: 0.9 });
   const rings = [];
   const metal = mat(0x8d8f98, { metalness: 0.7, roughness: 0.35 });
   for (const s of [-1, 1]) {
-    add(new THREE.BoxGeometry(0.045, 0.2, 0.05), metal, head, [s * 0.6, 0.62, 0]);
+    add(new THREE.BoxGeometry(0.045, 0.2, 0.05), metal, head, [s * 0.645, 0.6, 0]);
     add(new THREE.CylinderGeometry(0.215, 0.215, 0.16, 28), phoneMat, head, [s * 0.585, 0.4, 0], "avatar").rotation.z = Math.PI / 2;
     add(new THREE.CylinderGeometry(0.17, 0.17, 0.03, 28), mat(0x2d2a34, { metalness: 0.35, roughness: 0.4 }), head, [s * 0.675, 0.4, 0]).rotation.z = Math.PI / 2;
     add(new THREE.CylinderGeometry(0.2, 0.2, 0.07, 28), mat(0x3a2f2c, { roughness: 1 }), head, [s * 0.5, 0.4, 0]).rotation.z = Math.PI / 2;
