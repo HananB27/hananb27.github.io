@@ -2,263 +2,229 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <meta name="theme-color" content="#d6c7f5" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0d0a24" />
+    <meta name="color-scheme" content="dark" />
     <meta
       name="description"
-      content="Explore Hanan Bajramovic’s interactive 3D portfolio. Full stack development with Django, React, Next.js and Angular."
+      content="Hanan Bajramovic is a full stack developer working with Django, React, Next.js, Angular and JavaScript. Explore this playable 3D portfolio."
     />
-    <title>Hanan Bajramovic — A little world of code</title>
+    <meta property="og:title" content="Hanan Bajramovic — Full stack developer" />
+    <meta
+      property="og:description"
+      content="A playable 3D portfolio: spin the island, squash bugs, collect skills and open the arcade cabinets."
+    />
+    <title>Hanan Bajramovic — Full stack developer</title>
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 80'%3E%3Crect width='80' height='80' rx='20' fill='%23d6c7f5'/%3E%3Ctext x='12' y='56' font-size='48'%3E✳%3C/text%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230d0a24'/%3E%3Ctext x='9' y='46' font-size='38' fill='%23b5ff4d'%3E✳%3C/text%3E%3C/svg%3E"
     />
-    <link rel="stylesheet" href="style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap"
+    />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="modulepreload" href="js/main.js" />
   </head>
   <body>
-    <a class="skip" href="#projects">Skip to portfolio</a>
-    <header>
-      <a class="wordmark" href="#home" aria-label="Hanan Bajramovic home"
-        >hb<span>✳</span></a
-      >
-      <nav aria-label="Main navigation">
-        <a href="#projects">Work</a><a href="#about">The human</a
-        ><a href="#contact" class="nav-contact">Say hello ↗</a>
+    <a class="skip" href="#work">Skip to my work</a>
+
+    <!-- 3D scene: one fixed canvas behind every section -->
+    <div id="stage" aria-hidden="true">
+      <p class="stage-loading" id="stage-loading">Booting the little world…</p>
+    </div>
+    <div class="scrim" aria-hidden="true"></div>
+    <div class="progress" id="progress" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <a class="wordmark" href="#home" aria-label="Hanan Bajramovic, home">hb<span>✳</span></a>
+      <nav class="site-nav" aria-label="Main">
+        <a href="#work">Work</a>
+        <a href="#skills">Skills</a>
+        <a href="#about">About</a>
       </nav>
-    </header>
-    <main>
-      <section class="hero" id="home">
-        <div class="intro">
-          <p class="intro-label">
-            <span class="dot"></span> Hanan Bajramovic · Full stack developer
-          </p>
-          <h1>A little world.<br />A lot of <span>possibility.</span></h1>
-          <p class="lead">
-            I turn ideas into things you can click, explore, and enjoy. Welcome
-            to my corner of the internet.
-          </p>
-          <div class="hero-actions">
-            <button class="primary" id="play" disabled>
-              Enter my world <span>↗</span></button
-            ><a class="text-link" href="#projects"
-              >Or, take the scenic scroll ↓</a
-            >
-          </div>
-          <p class="device-note" id="device-note">
-            A tiny adventure for your keyboard. No download needed.
-          </p>
-        </div>
-        <div class="world-wrap" id="world-wrap">
-          <div class="world-label">
-            <span>HANAN’S PLAYGROUND</span
-            ><span id="mode-label">Interactive 3D world</span>
-          </div>
-          <div
-            id="world"
-            role="img"
-            aria-label="Colorful floating island with Hanan’s curly-haired avatar holding a laptop, trees, project stations and five collectible skill crystals"
-          >
-            <p class="world-fallback" id="loading">
-              Growing a little world…<br /><small
-                >Portfolio below is ready to explore.</small
-              >
-            </p>
-          </div>
-          <div class="world-hint" id="world-hint">
-            Drag to orbit · Click a project station
-          </div>
-          <div class="game-hud" hidden>
-            <span id="score" role="status">Skills discovered: 0 / 5</span
-            ><button id="exit">Exit game ↗</button>
-          </div>
-          <div class="game-help" hidden>
-            <p>
-              <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / arrows to move
-              <kbd>Space</kbd> jump <kbd>E</kbd> open nearby project
-            </p>
-            <p id="quest">
-              Collect 5 glowing crystals. Find what makes me tick.
-            </p>
-            <button id="restart">Restart adventure</button>
-          </div>
-          <button class="wave" id="wave" hidden>Make Hanan say hi ✋</button>
-        </div>
-        <div class="hero-bottom">
-          <span>Built with curiosity. Best explored.</span
-          ><a href="#projects">Keep wandering <span>↓</span></a>
-        </div>
-      </section>
-      <div class="ticker" aria-label="Development skills">
-        <span>React</span><b>✳</b><span>Django</span><b>✳</b><span>Next.js</span
-        ><b>✳</b><span>JavaScript</span><b>✳</b><span>Angular</span><b>✳</b
-        ><span>Ideas → experiences</span>
+      <div class="header-tools">
+        <a class="score-pill" id="score-pill" href="#skills" aria-label="Progress: 0 of 5 skills, 0 of 5 bugs">
+          <span><i class="pip-icon">✳</i> <b id="pill-skills">0</b>/5</span>
+          <span><i class="pip-icon bug">●</i> <b id="pill-bugs">0</b>/5</span>
+        </a>
+        <button class="btn btn-play" id="play" type="button" hidden disabled>▶ Play the game</button>
+        <a class="btn btn-ghost nav-cta" href="#contact">Say hello <span aria-hidden="true">↗</span></a>
       </div>
-      <section class="work-section" id="projects">
-        <div class="section-heading">
-          <h2>Things I’ve<br />put into the world<span>↙</span></h2>
-          <p>
-            Search, discover, trade, connect.<br />Different problems. Same
-            curiosity.
+    </header>
+
+    <nav class="dots" aria-label="Page sections">
+      <a href="#home" data-dot="0" aria-label="Intro"><span></span></a>
+      <a href="#work" data-dot="1" aria-label="Work"><span></span></a>
+      <a href="#skills" data-dot="2" aria-label="Skills"><span></span></a>
+      <a href="#about" data-dot="3" aria-label="About"><span></span></a>
+      <a href="#contact" data-dot="4" aria-label="Contact"><span></span></a>
+    </nav>
+
+    <main id="main">
+      <section class="panel hero" id="home" data-scene aria-labelledby="hero-title">
+        <div class="col">
+          <p class="kicker"><span class="live-dot"></span> Hanan Bajramovic · Full stack developer</p>
+          <h1 id="hero-title">I build little <span class="gradient">worlds</span> on&nbsp;the&nbsp;web.</h1>
+          <p class="lead">
+            I turn ideas into things you can click, explore and enjoy. This whole page is playable: poke the laptop,
+            grab a skill crystal, squash a bug.
           </p>
-        </div>
-        <div class="project-list">
-          <a
-            class="project project-search"
-            href="https://github.com/HananB27/Google-search"
-            target="_blank"
-            rel="noopener noreferrer"
-            ><div class="project-art">
-              <div class="browser-art">
-                <div class="browser-dots">● ● ●</div>
-                <strong><i>S</i>earch<span>✳</span></strong>
-                <div class="search-art">
-                  What are you curious about? <b>↗</b>
-                </div>
-                <small>Web &nbsp; Images &nbsp; Advanced</small>
-              </div>
-            </div>
-            <div class="project-copy">
-              <span class="project-kind">Search experience</span>
-              <h3>Curiosity, on demand <span>↗</span></h3>
-              <p>
-                A Google-inspired search interface with web, image, and advanced
-                search. One query. Plenty of possibilities.
-              </p>
-              <span class="tag">HTML · CSS · Search</span>
-            </div></a
-          >
-          <a
-            class="project project-auction"
-            href="https://github.com/HananB27/E-Commerce-Django-website"
-            target="_blank"
-            rel="noopener noreferrer"
-            ><div class="project-art">
-              <div class="auction-art">
-                <span class="art-star">✳</span
-                ><strong>Going,<br />going…<br /><em>yours.</em></strong
-                ><span class="bid">Place your bid ↗</span>
-              </div>
-            </div>
-            <div class="project-copy">
-              <span class="project-kind">Commerce platform</span>
-              <h3>A better kind of bidding <span>↗</span></h3>
-              <p>
-                A Django auction site with live listings, bids, watchlists,
-                categories, and conversations around every find.
-              </p>
-              <span class="tag">Django · Python · E-commerce</span>
-            </div></a
-          >
-          <a
-            class="project project-wiki"
-            href="https://github.com/HananB27/Wikipedia-made-with-Django"
-            target="_blank"
-            rel="noopener noreferrer"
-            ><div class="project-art">
-              <div class="wiki-art">
-                <span>the little</span><strong>WIKI</strong>
-                <p>A rabbit hole worth falling into.</p>
-                <div>Read ↗ &nbsp; Write + &nbsp; Discover ✳</div>
-              </div>
-            </div>
-            <div class="project-copy">
-              <span class="project-kind">Knowledge platform</span>
-              <h3>Room for every rabbit hole <span>↗</span></h3>
-              <p>
-                A searchable encyclopedia. Create and edit Markdown entries,
-                find an answer, or let a random page surprise you.
-              </p>
-              <span class="tag">Django · Markdown · Search</span>
-            </div></a
-          >
-          <a
-            class="project project-mail"
-            href="https://github.com/HananB27/Mail"
-            target="_blank"
-            rel="noopener noreferrer"
-            ><div class="project-art">
-              <div class="mail-art">
-                <div class="envelope">↗</div>
-                <strong>Hello, inbox.</strong
-                ><span>A little more connection.</span>
-              </div>
-            </div>
-            <div class="project-copy">
-              <span class="project-kind">API-powered email client</span>
-              <h3>Good things, delivered <span>↗</span></h3>
-              <p>
-                Send, receive, reply, and archive. An email client that keeps
-                the everyday essentials within reach.
-              </p>
-              <span class="tag">JavaScript · API · Email</span>
-            </div></a
-          >
+          <div class="actions">
+            <button class="btn btn-play" id="play-hero" type="button" hidden disabled>▶ Play the game</button>
+            <a class="btn btn-ghost" href="#work">See my work <span aria-hidden="true">↓</span></a>
+          </div>
+          <p class="hint" id="hint">Drag to spin me · Scroll to travel · Tap anything that glows</p>
+          <ul class="stack-chips" aria-label="Main technologies">
+            <li>Django</li>
+            <li>React</li>
+            <li>Next.js</li>
+            <li>Angular</li>
+            <li>JavaScript</li>
+          </ul>
         </div>
       </section>
-      <section class="about" id="about">
-        <div class="about-title">
-          <span class="big-star">✳</span>
-          <h2>Code is my craft.<br />Curiosity is my compass.</h2>
-        </div>
-        <div class="about-body">
-          <p class="large-copy">
-            Hey, I’m Hanan. I’m a full stack developer who enjoys making the web
-            feel a little more human.
-          </p>
-          <p>
-            My software engineering background at the International University
-            of Sarajevo shapes how I approach problems: understand the people,
-            untangle the complexity, and build something useful.
-          </p>
-          <p>
-            I work across Django, React, Next.js, Angular, and JavaScript,
-            connecting thoughtful interfaces with reliable foundations.
-          </p>
-          <a class="outline-button" href="Resume.pdf" download
-            >Grab my résumé <span>↓</span></a
-          >
+
+      <section class="panel work" id="work" data-scene aria-labelledby="work-title">
+        <div class="col">
+          <header class="section-head">
+            <p class="kicker">Selected work</p>
+            <h2 id="work-title">Things I’ve put into the world.</h2>
+            <p class="section-sub">
+              Search, discover, trade, connect. Four projects, four arcade cabinets. Different problems, same curiosity.
+            </p>
+          </header>
+          <div class="work-list">
+            <article class="project" data-index="0" style="--c: var(--cyan)">
+              <div class="project-screen" aria-hidden="true"><span>🔍</span><i>search.exe</i></div>
+              <p class="project-kind">Search experience</p>
+              <h3><a href="https://github.com/HananB27/Google-search" target="_blank" rel="noopener noreferrer">Curiosity, on demand <span aria-hidden="true">↗</span></a></h3>
+              <p>A Google-inspired search interface with web, image, and advanced search. One query. Plenty of possibilities.</p>
+              <ul class="tags"><li>HTML</li><li>CSS</li><li>Search</li></ul>
+            </article>
+            <article class="project" data-index="1" style="--c: var(--amber)">
+              <div class="project-screen" aria-hidden="true"><span>🔨</span><i>auction.exe</i></div>
+              <p class="project-kind">Commerce platform</p>
+              <h3><a href="https://github.com/HananB27/E-Commerce-Django-website" target="_blank" rel="noopener noreferrer">A better kind of bidding <span aria-hidden="true">↗</span></a></h3>
+              <p>A Django auction site with live listings, bids, watchlists, categories, and conversations around every find.</p>
+              <ul class="tags"><li>Django</li><li>Python</li><li>E-commerce</li></ul>
+            </article>
+            <article class="project" data-index="2" style="--c: var(--lime)">
+              <div class="project-screen" aria-hidden="true"><span>📖</span><i>wiki.exe</i></div>
+              <p class="project-kind">Knowledge platform</p>
+              <h3><a href="https://github.com/HananB27/Wikipedia-made-with-Django" target="_blank" rel="noopener noreferrer">Room for every rabbit hole <span aria-hidden="true">↗</span></a></h3>
+              <p>A searchable encyclopedia. Create and edit Markdown entries, find an answer, or let a random page surprise you.</p>
+              <ul class="tags"><li>Django</li><li>Markdown</li><li>Search</li></ul>
+            </article>
+            <article class="project" data-index="3" style="--c: var(--magenta)">
+              <div class="project-screen" aria-hidden="true"><span>✉️</span><i>mail.exe</i></div>
+              <p class="project-kind">API-powered email client</p>
+              <h3><a href="https://github.com/HananB27/Mail" target="_blank" rel="noopener noreferrer">Good things, delivered <span aria-hidden="true">↗</span></a></h3>
+              <p>Send, receive, reply, and archive. An email client that keeps the everyday essentials within reach.</p>
+              <ul class="tags"><li>JavaScript</li><li>API</li><li>Email</li></ul>
+            </article>
+          </div>
         </div>
       </section>
-      <section class="contact" id="contact">
-        <p>Got an idea? Let’s give it a world.</p>
-        <h2>Let’s make<br />something <em>click.</em></h2>
-        <a class="primary" href="mailto:hananbajramovic075@gmail.com"
-          >Say hello <span>↗</span></a
-        >
-        <div class="contact-links">
-          <a
-            href="https://github.com/HananB27"
-            target="_blank"
-            rel="noopener noreferrer"
-            >GitHub ↗</a
-          ><a
-            href="https://www.linkedin.com/in/hananb27-498683229"
-            target="_blank"
-            rel="noopener noreferrer"
-            >LinkedIn ↗</a
-          ><a href="tel:+38761501740">Call me ↗</a>
+
+      <section class="panel skills" id="skills" data-scene aria-labelledby="skills-title">
+        <div class="col">
+          <p class="kicker">Toolkit</p>
+          <h2 id="skills-title">Five tools. One toolkit.</h2>
+          <p class="section-sub">
+            Each skill is a crystal floating on the island. Tap one here (or in the scene) to unlock it.
+          </p>
+          <ul class="skill-grid" id="skill-grid"></ul>
+          <p class="game-note" id="game-note">Unlock all five and squash five bugs to ship the release.</p>
+        </div>
+      </section>
+
+      <section class="panel about" id="about" data-scene aria-labelledby="about-title">
+        <div class="col">
+          <p class="kicker">The human</p>
+          <h2 id="about-title">Code is my craft. Curiosity is my compass.</h2>
+          <p class="large">
+            Hey, I’m Hanan. I’m a full stack developer who enjoys making the web feel a little more human.
+          </p>
+          <p>
+            My software engineering background at the International University of Sarajevo shapes how I approach
+            problems: understand the people, untangle the complexity, and build something useful.
+          </p>
+          <p>
+            I work across Django, React, Next.js, Angular, and JavaScript, connecting thoughtful interfaces with
+            reliable foundations.
+          </p>
+          <a class="btn" href="Resume.pdf" download>Grab my résumé <span aria-hidden="true">↓</span></a>
+        </div>
+      </section>
+
+      <section class="panel contact" id="contact" data-scene aria-labelledby="contact-title">
+        <div class="col">
+          <p class="kicker">Say hello</p>
+          <h2 id="contact-title">Got an idea? Let’s give it a world.</h2>
+          <p class="lead">Let’s make something click.</p>
+          <div class="actions">
+            <a class="btn" href="mailto:hananbajramovic075@gmail.com">Email me <span aria-hidden="true">↗</span></a>
+          </div>
+          <ul class="contact-links">
+            <li><a href="https://github.com/HananB27" target="_blank" rel="noopener noreferrer">GitHub ↗</a></li>
+            <li><a href="https://www.linkedin.com/in/hananb27-498683229" target="_blank" rel="noopener noreferrer">LinkedIn ↗</a></li>
+            <li><a href="tel:+38761501740">Call me ↗</a></li>
+          </ul>
+          <footer class="site-footer">
+            <span>© <span id="year">2026</span> Hanan Bajramovic</span>
+            <a href="#home">Back to the top ↑</a>
+          </footer>
         </div>
       </section>
     </main>
-    <footer>
-      <span>© <span id="year">2026</span> Hanan Bajramovic</span
-      ><a href="#home">Back to my little world ↑</a
-      ><span>Made to be explored. ✳</span>
-    </footer>
+
+    <!-- Game HUD (desktop play mode) -->
+    <div class="hud" id="hud" hidden>
+      <div class="hud-top">
+        <div class="hud-stats" role="status" aria-live="polite">
+          <span class="hud-stat">Skills <b id="hud-skills">0</b>/5</span>
+          <span class="hud-stat">Bugs <b id="hud-bugs">0</b>/5</span>
+        </div>
+        <div class="hud-buttons">
+          <button class="btn btn-ghost" id="mute" type="button" aria-pressed="false">Sound on</button>
+          <button class="btn btn-ghost" id="restart" type="button">Restart</button>
+          <button class="btn" id="exit" type="button">Exit game ✕</button>
+        </div>
+      </div>
+      <p class="hud-help">
+        <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move</span>
+        <span><kbd>Space</kbd> jump (land on bugs!)</span>
+        <span><kbd>Shift</kbd> dash</span>
+        <span><kbd>E</kbd> open cabinet</span>
+        <span>Drag to turn the camera</span>
+        <span><kbd>Esc</kbd> exit</span>
+      </p>
+    </div>
+
+    <aside class="win" id="win" role="dialog" aria-labelledby="win-title" hidden>
+      <p class="kicker">Release shipped ✓</p>
+      <h2 id="win-title">All skills found. All bugs squashed.</h2>
+      <p>You just shipped the build. Want a developer who finishes what they start?</p>
+      <div class="actions">
+        <a class="btn" href="mailto:hananbajramovic075@gmail.com">Say hello ↗</a>
+        <button class="btn btn-ghost" id="win-close" type="button">Keep exploring</button>
+      </div>
+    </aside>
+
     <dialog id="project-dialog" aria-labelledby="dialog-title">
-      <button id="close-dialog" aria-label="Close project details">✕</button>
-      <p id="dialog-kind"></p>
+      <button id="close-dialog" type="button" aria-label="Close project details">✕</button>
+      <p id="dialog-kind" class="kicker"></p>
       <h2 id="dialog-title"></h2>
       <p id="dialog-description"></p>
-      <a
-        id="dialog-link"
-        class="primary"
-        target="_blank"
-        rel="noopener noreferrer"
-        >Explore repository ↗</a
-      >
+      <ul id="dialog-tags" class="tags"></ul>
+      <a id="dialog-link" class="btn" target="_blank" rel="noopener noreferrer">Explore repository ↗</a>
     </dialog>
-    <div class="toast" id="toast" role="status"></div>
-    <script type="module" src="app.js"></script>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script type="module" src="js/main.js"></script>
   </body>
 </html>

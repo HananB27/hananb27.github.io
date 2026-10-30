@@ -1,0 +1,35 @@
+/* Neon Arcade palette — single source of truth.
+   The 3D world reads these custom properties at runtime (js/world/palette.js),
+   so changing a colour here recolours the whole site and the WebGL scene. */
+:root {
+  --bg: #0d0a24;
+  --bg-2: #171238;
+  --bg-3: #221a52;
+  --panel: rgba(23, 18, 56, 0.72);
+  --line: rgba(190, 176, 255, 0.2);
+
+  --text: #f6f3ff;
+  --muted: #bdb5e6;
+
+  --violet: #8b5cff;
+  --magenta: #ff4fb8;
+  --cyan: #2be4ff;
+  --lime: #b5ff4d;
+  --amber: #ffc83d;
+  --coral: #ff6b5e;
+
+  /* Set by JS while scrolling: the accent of the section currently in view. */
+  --accent: var(--violet);
+
+  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  --radius: 22px;
+  --gutter: clamp(20px, 5vw, 72px);
+  --z-canvas: 0;
+  --z-content: 2;
+  --z-header: 10;
+  --z-hud: 20;
+  --z-modal: 30;
+  --z-toast: 40;
+}

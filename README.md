@@ -1,24 +1,73 @@
-# Hanan’s little world
+# Hanan Bajramović — Neon Arcade portfolio
 
-A colorful, accessible portfolio with a lightweight Three.js floating island.
+A playable 3D portfolio. Static site, no build step, hosted on GitHub Pages.
+
+- **Desktop:** scroll-driven 3D website *plus* a third-person game. Hit **Play the game**, run around the floating island, collect five skill crystals, stomp five bugs and open the arcade cabinets (one per project).
+- **Phones and tablets:** a 3D website. The camera and the island's spin follow your scroll, and everything glowing is tappable (laptop, crystals, bugs, cabinets, the avatar).
+- **Avatar:** a low-poly, code-built character based on a reference photo: curly dark hair, tortoiseshell glasses, black headphones, light stubble, beige jacket with a corduroy collar over a waffle-knit sweater, holding a laptop with scrolling code. It is a stylised character, not a scan, and the photo is not in the repo.
 
 ## Run
 
-Run `npm run dev` and open http://127.0.0.1:4173. No install or build is required. GitHub Pages serves the root directly. Three.js 0.170.0 is vendored with its MIT license; the optional Manrope font falls back to Arial if Google Fonts is unavailable.
+```bash
+npm run dev      # http://127.0.0.1:4173
+npm run check    # syntax-check every module
+npm test         # unit tests (game rules, scroll maths, content)
+```
 
-## Explore
+Open the site with `?debug` to expose `window.__world.debug` for QA.
 
-- Desktop: **Enter my world**, move with WASD or arrows, jump with Space, collect five skill crystals, and press E near a project station. Click stations to open their details. Escape or Exit returns to the portfolio. Restart resets the collection.
-- Mobile or touch: scroll the page to rotate the 3D world, drag horizontally to orbit, and tap a project station. All portfolio content remains ordinary, scrollable HTML.
-- **Make Hanan say hi** animates the avatar. The code-authored stylized avatar references the supplied photo’s curly brown hair, glasses, headphones, and light jacket, and holds a laptop. It is not a reconstructed scan. The original personal photo is not published.
-- Reduced motion disables decorative motion and scroll rotation. A WebGL failure leaves projects, résumé, and contact available. Rendering pauses when offscreen or the tab is hidden. Pixel ratio is capped for mobile GPU load.
+## Controls (game mode)
 
-## Source
+| Key | Action |
+| --- | --- |
+| W A S D / arrows | move (camera-relative) |
+| Space | jump; land on a bug to squash it |
+| Shift | dash |
+| E | open the nearest cabinet |
+| Drag | turn the camera |
+| M | mute, Esc exit |
 
-`world.js` owns 3D rendering, `game.js` owns tested movement and collection rules, `data.js` owns station content, `app.js` owns dialogs and initialization, and `style.css` owns the responsive palette and layout. Color roles: lilac world, mint craft, coral commerce, yellow connection, dark plum text.
+Squash 5 bugs and unlock all 5 skills to "ship the release". Progress is shared between game mode and the scroll site (skills can also be unlocked from the Skills section, and bugs tapped on touch devices).
 
-Facts and links come from the original portfolio: Hanan Bajramovic, full stack development, International University of Sarajevo software engineering background, Django, React, Next.js, Angular, JavaScript, and four original projects. No unverified employment, graduation date, or achievement claims were added.
+## Structure
 
-## Verify
+```
+index.html            content and landmarks (works without WebGL)
+css/tokens.css        Neon Arcade palette: single source of truth
+css/style.css         layout, components, responsive rules
+js/main.js            boot, UI wiring, game enter/exit
+js/ui.js              dialog, toast, win banner
+js/data.js            projects and skills
+js/rules.js           pure, unit-tested game and scroll rules
+js/world/index.js     scene, loop, input, game state
+js/world/avatar.js    the rigged avatar and laptop
+js/world/island.js    island, trees, lamps, sky
+js/world/props.js     cabinets, crystals, bugs, sprites
+js/world/frames.js    scroll camera keyframes (wide / compact)
+js/world/particles.js instanced confetti
+js/world/sfx.js       WebAudio blips (game mode only)
+vendor/               three.js r170 (minified, MIT)
+tests/                node --test suites
+```
 
-`npm run check` and `npm test`. Browser QA should cover desktop gameplay, project dialog/keyboard focus, reset/exit, mobile widths, scroll rotation, reduced motion, and WebGL fallback. No analytics, account system, or server required.
+## Palette
+
+Defined once in `css/tokens.css`; the WebGL scene reads the same custom properties at runtime (`js/world/palette.js`), so editing a token recolours the page and the 3D world together.
+
+| Token | Hex | Used for |
+| --- | --- | --- |
+| `--bg` / `--bg-2` / `--bg-3` | `#0d0a24` / `#171238` / `#221a52` | night sky, panels, grid |
+| `--violet` | `#8b5cff` | home accent, Next.js |
+| `--cyan` | `#2be4ff` | work accent, Search cabinet, React |
+| `--lime` | `#b5ff4d` | primary buttons, Wiki cabinet, Django |
+| `--amber` | `#ffc83d` | about accent, Auction cabinet, JavaScript |
+| `--magenta` | `#ff4fb8` | contact accent, Mail cabinet, play button |
+| `--coral` | `#ff6b5e` | bugs, Angular |
+
+The section in view sets `--accent`, which tints the progress bar, nav, island rim and lights.
+
+## Accessibility and resilience
+
+Semantic HTML with skip link and landmarks; all content lives in the DOM and the canvas is `aria-hidden`. Focus is managed for the project dialog and game mode (page is `inert` while playing). `prefers-reduced-motion` disables scroll spin and ambient motion. If WebGL is missing or the context is lost the page falls back to plain content. Pixel ratio is capped, shadows are disabled on touch devices and hair, pebbles and particles are instanced.
+
+Facts and links come from the original portfolio. No unverified employment or achievement claims were added.

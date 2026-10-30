@@ -1,11 +1,12 @@
 {
-  "name": "hanan-world-portfolio",
-  "version": "2.0.0",
+  "name": "hanan-neon-arcade-portfolio",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
+  "description": "Playable 3D portfolio for Hanan Bajramovic. Static site, no build step.",
   "scripts": {
     "dev": "python3 -m http.server 4173 --bind 127.0.0.1",
-    "check": "node --check app.js && node --check world.js && node --check data.js && node --check game.js",
+    "check": "for f in js/*.js js/world/*.js; do node --check $f || exit 1; done",
     "test": "node --test tests/*.test.js"
   }
 }
