@@ -315,7 +315,7 @@ export function createAvatar(palette) {
   }
   add(skullGeo, mat(SKIN), head, [0, 0.44, 0], "avatar").scale.set(0.9, 1.1, 0.94);
 
-  // Simple face: dot eyes, brows, a small nose and one mouth line. Clean-shaven.
+  // Simple face: dot eyes, brows, a small nose and a slight smile. Clean-shaven.
   const eyes = [];
   for (const s of [-1, 1]) {
     const eye = sphere(0.045, 0x1a1412, head, [s * 0.19, 0.43, 0.44], undefined, 2);
@@ -325,7 +325,10 @@ export function createAvatar(palette) {
     brow.rotation.z = s * -0.08;
   }
   sphere(0.055, SKIN_SHADE, head, [0, 0.32, 0.485], "avatar", 2);
-  box(0.13, 0.018, 0.03, 0x8a5443, head, [0, 0.16, 0.445], "avatar");
+  // A short arc for the smile, tilted back to follow the chin.
+  const SMILE_ARC = 1.3;
+  const smile = add(new THREE.TorusGeometry(0.12, 0.011, 8, 24, SMILE_ARC), mat(0x7a4538), head, [0, 0.275, 0.44], "avatar");
+  smile.rotation.set(0.41, 0, -Math.PI / 2 - SMILE_ARC / 2);
 
   // Round tortoiseshell glasses: two rims, a bridge and the temples.
   const frameMat = mat(FRAME, { roughness: 0.5 });
