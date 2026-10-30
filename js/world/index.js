@@ -1,76 +1,72 @@
 import * as THREE from "../../vendor/three.module.min.js";
-import { projects, skills, BUGS_TO_SHIP } from "../data.js";
+import { projects, skills, kiosks } from "../data.js";
 import {
-  ISLAND_RADIUS,
   WALK_SPEED,
   DASH_SPEED,
   JUMP_VELOCITY,
   clamp,
   movePlayer,
+  moveToward,
+  nearestWithin,
   stepJump,
   collectSkills,
-  updateBug,
-  resolveBugs,
   sectionProgress,
   nearestTurn,
 } from "../rules.js";
 import { readPalette } from "./palette.js";
 import { createAvatar } from "./avatar.js";
 import { createIsland } from "./island.js";
-import { createCabinet, createCrystal, createBug, glowSprite } from "./props.js";
+import { createStation, createCrystal } from "./props.js";
 import { Particles } from "./particles.js";
-import { FRAMES, ACCENTS, mixFrames } from "./frames.js";
-import { sfx } from "./sfx.js";
+import { FRAMES, mixFrames } from "./frames.js";
 
 const TURN = Math.PI * 2;
 const CABINET_RADIUS = 4.9;
 const CABINET_ANGLES = [-0.95, -0.32, 0.32, 0.95];
 const CRYSTAL_SPOTS = [
-  [-3.4, 0.6],
-  [3.4, 0.3],
-  [-2.0, -2.5],
-  [2.1, -2.6],
-  [-1.6, 3.2],
+  [-3.2, 0.2],
+  [3.2, -0.1],
+  [-1.9, -2.4],
+  [1.9, -2.5],
+  [-2.5, 3.1],
 ];
-const MAX_BUGS = 3;
+const KIOSK_SPOTS = { about: [-5.3, 1.2], contact: [5.3, 1.2] };
+const TRAVEL_STOPS = { work: [0, -2.4], skills: [0, 1.2], about: [-3.6, 1.2], contact: [3.6, 1.2] };
 
 /**
  * Builds the whole 3D experience inside `container`.
  *
- * Two modes share one scene:
- *  - "scroll": the camera and island spin follow page scroll (phones, tablets
- *    and desktop browsing); everything is clickable / tappable.
- *  - "play":   desktop-only third-person game with WASD, jump and dash.
+ * One scene, two modes:
+ *  - "play":   the desktop experience. The page *is* the game: third-person
+ *              WASD / jump / dash, walk up to a cabinet or kiosk and press E.
+ *  - "scroll": phones, tablets and the desktop “classic view”. Camera and the
+ *              island's spin follow page scroll; everything is tappable.
  */
-export function createWorld({ container, sections, hooks }) {
+export function createWorld({ container, sections, hooks, mode: initialMode = "scroll" }) {
   const palette = readPalette();
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
   const compactMQ = matchMedia("(max-width: 899px), (pointer: coarse)");
   const lowPower = compactMQ.matches;
 
-  const renderer = new THREE.WebGLRenderer({
-    antialias: !lowPower,
-    alpha: true,
-    powerPreference: "high-performance",
-  });
+  const renderer = new THREE.WebGLRenderer({ antialias: !lowPower, alpha: true, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(devicePixelRatio, lowPower ? 1.5 : 2));
   renderer.shadowMap.enabled = !lowPower;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.95;
+  renderer.toneMappingExposure = 1.0;
   renderer.setClearColor(0x000000, 0);
   const canvas = renderer.domElement;
   canvas.setAttribute("aria-hidden", "true");
   container.append(canvas);
 
   const scene = new THREE.Scene();
-  scene.fog = new THREE.Fog(palette.bg, 34, 90);
+  scene.fog = new THREE.Fog(palette.bg, 30, 85);
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 200);
 
-  // ---- lights ----------------------------------------------------------------------------
-  scene.add(new THREE.HemisphereLight(0xb8a8ff, 0x1a1442, 1.0));
-  const sun = new THREE.DirectionalLight(0xfff4e8, 1.9);
+  // ---- lights: neutral key and fill, one cool rim ----------------------------------------------------
+  scene.add(new THREE.HemisphereLight(0xc9d6ea, 0x161a22, 1.1));
+  const sun = new THREE.DirectionalLight(0xfff3e4, 2.0);
   sun.position.set(-6, 12, 9);
   sun.castShadow = !lowPower;
   sun.shadow.mapSize.set(1024, 1024);
@@ -78,226 +74,136 @@ export function createWorld({ container, sections, hooks }) {
   sun.shadow.bias = -0.0005;
   sun.shadow.normalBias = 0.03;
   scene.add(sun);
-  // Warm fill from the camera side keeps the avatar's face friendly under the neon lights.
-  const fill = new THREE.DirectionalLight(0xffdcc0, 1.3);
+  const fill = new THREE.DirectionalLight(0xffe6d0, 1.0);
   fill.position.set(2.5, 3, 10);
   scene.add(fill);
-  const cyanLight = new THREE.PointLight(palette.cyan, 60, 0, 2);
-  cyanLight.position.set(-8, 4, -5);
-  const magentaLight = new THREE.PointLight(palette.magenta, 38, 0, 2);
-  magentaLight.position.set(8, 3, 6);
-  const accentLight = new THREE.PointLight(palette.violet, 7, 0, 2);
-  accentLight.position.set(0, 3.2, 1);
-  scene.add(cyanLight, magentaLight, accentLight);
+  const rim = new THREE.PointLight(palette.accent, 35, 0, 2);
+  rim.position.set(-8, 4, -6);
+  scene.add(rim);
 
   const root = new THREE.Group();
   scene.add(root);
   const island = createIsland(palette, { lowPower });
   root.add(island.group);
-  const particles = new Particles(root);
+  const particles = new Particles(root, 120);
 
-  // ---- avatar --------------------------------------------------------------------------------
   const avatar = createAvatar(palette);
   avatar.group.scale.setScalar(1.05);
   root.add(avatar.group);
   const avatarState = { y: 0, vy: 0, facing: 0 };
 
-  // ---- cabinets -----------------------------------------------------------------------------------
-  const cabinets = projects.map((project, i) => {
-    const cabinet = createCabinet(project, palette[project.color], palette);
+  // ---- stations: four project cabinets plus About / Contact kiosks ------------------------------------------
+  const stations = [];
+  projects.forEach((project, i) => {
     const a = CABINET_ANGLES[i];
-    cabinet.group.position.set(Math.sin(a) * CABINET_RADIUS, 0, -Math.cos(a) * CABINET_RADIUS);
-    cabinet.group.rotation.y = -a;
-    cabinet.hits.forEach((m) => (m.userData.index = i));
-    cabinet.angle = a;
-    cabinet.position = cabinet.group.position;
-    root.add(cabinet.group);
-    // Neon spoke from the hub to each cabinet.
-    const spoke = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.1, CABINET_RADIUS - 2.6),
-      new THREE.MeshBasicMaterial({ color: palette[project.color], transparent: true, opacity: 0.7, toneMapped: false }),
+    const station = createStation({ id: project.id, title: project.name, subtitle: project.kind, label: project.name.toUpperCase() }, palette);
+    station.group.position.set(Math.sin(a) * CABINET_RADIUS, 0, -Math.cos(a) * CABINET_RADIUS);
+    station.group.rotation.y = -a;
+    Object.assign(station, { kind: "project", index: i, angle: a, position: station.group.position });
+    stations.push(station);
+  });
+  kiosks.forEach((kiosk, i) => {
+    const [x, z] = KIOSK_SPOTS[kiosk.id];
+    const station = createStation(
+      { id: kiosk.icon, title: kiosk.label, subtitle: kiosk.id === "about" ? "Who I am" : "Say hello", label: kiosk.label },
+      palette,
     );
+    station.group.position.set(x, 0, z);
+    station.group.rotation.y = Math.atan2(-x, -z);
+    Object.assign(station, { kind: kiosk.id, index: i, position: station.group.position });
+    stations.push(station);
+  });
+  stations.forEach((s) => {
+    s.hits.forEach((m) => (m.userData.station = stations.indexOf(s)));
+    root.add(s.group);
+  });
+  // Fine spokes from the hub to each cabinet.
+  const spokeMat = new THREE.MeshBasicMaterial({ color: palette.steel, transparent: true, opacity: 0.35, toneMapped: false });
+  CABINET_ANGLES.forEach((a) => {
+    const spoke = new THREE.Mesh(new THREE.PlaneGeometry(0.05, CABINET_RADIUS - 2.4), spokeMat);
     spoke.rotation.x = -Math.PI / 2;
     spoke.rotation.z = a;
-    const mid = (CABINET_RADIUS + 2.6) / 2;
+    const mid = (CABINET_RADIUS + 1.7) / 2;
     spoke.position.set(Math.sin(a) * mid, 0.015, -Math.cos(a) * mid);
     root.add(spoke);
-    return cabinet;
   });
 
-  // ---- crystals --------------------------------------------------------------------------------------
+  // ---- skill crystals ---------------------------------------------------------------------------------------------
   const crystals = skills.map((skill, i) => {
-    const crystal = createCrystal(skill, palette[skill.color], palette);
+    const crystal = createCrystal(skill, palette);
     const [x, z] = CRYSTAL_SPOTS[i];
     crystal.group.position.set(x, 0.95, z);
     crystal.body.userData.index = i;
-    crystal.position = crystal.group.position;
-    crystal.collected = false;
-    crystal.pulse = 0;
-    crystal.index = i;
+    Object.assign(crystal, { position: crystal.group.position, collected: false, pulse: 0, index: i });
     root.add(crystal.group);
     return crystal;
   });
 
-  // ---- bugs --------------------------------------------------------------------------------------------
-  const bugs = Array.from({ length: MAX_BUGS }, (_, i) => {
-    const model = createBug(palette);
-    model.body.userData.bug = i;
-    root.add(model.group);
-    const bug = {
-      model,
-      position: model.group.position,
-      heading: 0,
-      speed: 0.9,
-      alive: false,
-      seed: i + 1,
-      respawnAt: 1 + i * 1.4,
-      squashT: -1,
-    };
-    model.group.visible = false;
-    return bug;
+  // ---- game state ---------------------------------------------------------------------------------------------------
+  const game = { skills: skills.map(() => false), complete: false };
+  const snapshot = () => ({
+    skills: [...game.skills],
+    skillCount: game.skills.filter(Boolean).length,
+    skillTotal: skills.length,
+    complete: game.complete,
   });
-  function spawnBug(bug) {
-    const a = Math.random() * TURN;
-    const r = 2.8 + Math.random() * 2.8;
-    let x = Math.sin(a) * r;
-    let z = Math.cos(a) * r;
-    if (z < -3) z = Math.abs(z) * 0.6;
-    bug.position.set(x, 0, z);
-    bug.heading = Math.random() * TURN;
-    bug.alive = true;
-    bug.squashT = -1;
-    bug.model.group.visible = true;
-    bug.model.group.scale.set(1, 1, 1);
-    particles.emit(bug.position.clone().setY(0.4), [palette.lime, palette.coral], 8, { speed: 1.4, life: 0.6, size: 0.7 });
-  }
-
-  // ---- game state ------------------------------------------------------------------------------------------
-  const game = {
-    skills: skills.map(() => false),
-    bugs: 0,
-    won: false,
-    startedAt: 0,
-  };
-  function snapshot() {
-    return {
-      skills: [...game.skills],
-      skillCount: game.skills.filter(Boolean).length,
-      skillTotal: skills.length,
-      bugs: game.bugs,
-      bugsTotal: BUGS_TO_SHIP,
-      won: game.won,
-    };
-  }
   const emitState = () => hooks.onState?.(snapshot());
 
-  function applyCrystalLook(crystal) {
-    const done = crystal.collected;
-    crystal.body.material.emissiveIntensity = done ? 0.12 : 0.9;
-    crystal.halo.material.opacity = done ? 0.1 : 0.75;
-    crystal.tag.material.opacity = done ? 0.55 : 1;
-    crystal.ring.material.opacity = 1;
-    crystal.ring.material.transparent = true;
-    crystal.ring.material.opacity = done ? 0.25 : 1;
+  function applyCrystalLook(c) {
+    c.body.material.emissiveIntensity = c.collected ? 0.1 : 0.55;
+    c.tag.material.opacity = c.collected ? 0.5 : 1;
+    c.ring.material.opacity = c.collected ? 0.2 : 0.7;
   }
-
-  function collectCrystal(crystal, { silent = false } = {}) {
-    if (game.skills[crystal.index]) return;
-    crystal.collected = true;
-    crystal.pulse = 1;
-    game.skills[crystal.index] = true;
-    applyCrystalLook(crystal);
-    particles.emit(crystal.position, [crystal.color, palette.text, palette.amber], 26, { speed: 3.2, up: 3.5, life: 1.1 });
-    sfx.collect();
+  function collectCrystal(c, { silent = false } = {}) {
+    if (game.skills[c.index]) return;
+    c.collected = true;
+    c.pulse = 1;
+    game.skills[c.index] = true;
+    applyCrystalLook(c);
+    particles.emit(c.position, [palette.accent, palette.text], 16, { speed: 2.4, up: 2.8, life: 0.9, size: 0.8 });
     const count = game.skills.filter(Boolean).length;
-    if (!silent) hooks.onToast?.(`${skills[crystal.index].name} unlocked · ${count} of ${skills.length}`);
-    emitState();
-    checkWin();
-  }
-
-  function squashBug(bug) {
-    if (!bug.alive && bug.squashT >= 0) return;
-    bug.alive = false;
-    bug.squashT = 0;
-    bug.respawnAt = time + 2.8;
-    game.bugs++;
-    particles.emit(bug.position.clone().setY(0.3), [palette.coral, palette.lime, palette.amber], 18, { speed: 2.6, up: 3, life: 0.9 });
-    sfx.squash();
-    hooks.onToast?.(
-      game.bugs >= BUGS_TO_SHIP ? "Bug squashed. That’s all of them!" : `Bug squashed · ${game.bugs} of ${BUGS_TO_SHIP}`,
-    );
-    emitState();
-    checkWin();
-  }
-
-  function checkWin() {
-    if (game.won) return;
-    if (game.skills.every(Boolean) && game.bugs >= BUGS_TO_SHIP) {
-      game.won = true;
-      avatar.wave(time, 4);
+    if (!silent) hooks.onToast?.(`${skills[c.index].name} unlocked · ${count} of ${skills.length}`);
+    if (count === skills.length && !game.complete) {
+      game.complete = true;
       avatar.runBuild(time);
-      const burst = avatar.group.position.clone().setY(2.6);
-      [0, 1, 2].forEach((n) =>
-        setTimeout(
-          () =>
-            particles.emit(burst, [palette.violet, palette.magenta, palette.cyan, palette.lime, palette.amber, palette.coral], 60, {
-              speed: 5.5,
-              up: 6,
-              life: 2,
-              gravity: 6,
-              size: 1.2,
-            }),
-          n * 280,
-        ),
-      );
-      sfx.win();
-      emitState();
-      hooks.onWin?.(snapshot());
+      avatar.wave(time, 3);
+      hooks.onComplete?.();
     }
-  }
-
-  function restart() {
-    game.skills.fill(false);
-    game.bugs = 0;
-    game.won = false;
-    game.startedAt = time;
-    crystals.forEach((c) => {
-      c.collected = false;
-      applyCrystalLook(c);
-    });
-    bugs.forEach((b, i) => {
-      b.alive = false;
-      b.model.group.visible = false;
-      b.respawnAt = time + 0.8 + i * 1.2;
-    });
-    avatar.group.position.set(0, 0, 0);
-    avatarState.y = avatarState.vy = 0;
     emitState();
   }
 
-  // ---- camera, scroll and mode state -----------------------------------------------------------------------------
-  let mode = "scroll";
+  // ---- camera, scroll and mode state ---------------------------------------------------------------------------------
+  let mode = initialMode;
   let time = 0;
   let width = 1;
   let height = 1;
   let tops = [];
   let focusStation = -1;
-  let spin = 0; // user drag spin, springs back to zero
+  let spin = 0;
+  let scrollSection = 0;
+  let initialised = false;
   const smooth = {
     pos: new THREE.Vector3(0, 3, 9),
     look: new THREE.Vector3(0, 1.4, 0),
     shiftX: 0,
     shiftY: 0,
     rot: 0,
-    accent: new THREE.Color(palette.violet),
   };
-  let initialised = false;
-  const play = { yaw: 0, pitch: 0.5, dist: 9, keys: new Set(), dashUntil: 0, dashReadyAt: 0, lastInput: { x: 0, z: -1 }, bumpAt: 0 };
-  const pointer = { x: 0, y: 0, ndc: new THREE.Vector2(), has: false };
+  const play = {
+    yaw: 0,
+    pitch: 0.44,
+    dist: 10,
+    keys: new Set(),
+    dashUntil: 0,
+    dashReadyAt: 0,
+    lastInput: { x: 0, z: -1 },
+    travel: null,
+    moved: false,
+  };
+  const pointer = { x: 0, y: 0, has: false };
   const raycaster = new THREE.Raycaster();
   const tmpV = new THREE.Vector3();
-  const tmpColor = new THREE.Color();
-  const accentColors = ACCENTS.map((k) => new THREE.Color(palette[k]));
+  if (mode === "play") avatar.group.position.set(0, 0, 1.4);
 
   function measure() {
     tops = sections.map((el) => el.getBoundingClientRect().top + scrollY);
@@ -318,31 +224,21 @@ export function createWorld({ container, sections, hooks }) {
     const set = compactMQ.matches ? FRAMES.compact : FRAMES.wide;
     const progress = tops.length ? sectionProgress(tops, scrollY, innerHeight) : 0;
     const i = Math.min(Math.floor(progress), set.length - 2);
-    const t = progress - i;
-    return { frame: mixFrames(set[i], set[i + 1], t), progress };
+    return { frame: mixFrames(set[i], set[i + 1], progress - i), progress };
   }
-
   function cameraTarget(frame) {
     const vfov = THREE.MathUtils.degToRad(camera.fov);
     const hfov = 2 * Math.atan(Math.tan(vfov / 2) * camera.aspect);
     const dist = Math.max(frame.fitW / (2 * Math.tan(hfov / 2)), frame.fitH / (2 * Math.tan(vfov / 2)));
-    const dir = tmpV.set(
-      Math.sin(frame.az) * Math.cos(frame.el),
-      Math.sin(frame.el),
-      Math.cos(frame.az) * Math.cos(frame.el),
-    );
-    return {
-      look: new THREE.Vector3(...frame.look),
-      pos: new THREE.Vector3(...frame.look).addScaledVector(dir, dist),
-    };
+    const dir = tmpV.set(Math.sin(frame.az) * Math.cos(frame.el), Math.sin(frame.el), Math.cos(frame.az) * Math.cos(frame.el));
+    return { look: new THREE.Vector3(...frame.look), pos: new THREE.Vector3(...frame.look).addScaledVector(dir, dist) };
   }
 
-  // ---- interaction ---------------------------------------------------------------------------------------------
+  // ---- interaction ----------------------------------------------------------------------------------------------------
   function pickables() {
     const list = [...avatar.hitMeshes];
-    cabinets.forEach((c) => list.push(...c.hits));
+    stations.forEach((s) => list.push(...s.hits));
     crystals.forEach((c) => list.push(c.body));
-    bugs.forEach((b) => b.alive && list.push(b.model.body));
     return list;
   }
   function pick(clientX, clientY) {
@@ -353,34 +249,29 @@ export function createWorld({ container, sections, hooks }) {
     );
     return raycaster.intersectObjects(pickables(), false)[0]?.object ?? null;
   }
-
   function openStation(i) {
-    sfx.open();
-    hooks.onProject?.(i);
+    const s = stations[i];
+    hooks.onOpen?.({ kind: s.kind, index: s.kind === "project" ? s.index : undefined });
   }
-
   function activate(object) {
     const part = object.userData.part;
-    if (part === "cabinet") return openStation(object.userData.index);
+    if (part === "station") return openStation(object.userData.station);
     if (part === "crystal") {
-      const crystal = crystals[object.userData.index];
-      if (crystal.collected) {
-        crystal.pulse = 1;
-        particles.emit(crystal.position, [crystal.color], 10, { speed: 2, life: 0.7 });
-        hooks.onToast?.(`${skills[crystal.index].name}: already in my toolkit ✓`);
-      } else collectCrystal(crystal);
+      const c = crystals[object.userData.index];
+      if (c.collected) {
+        c.pulse = 1;
+        hooks.onToast?.(`${skills[c.index].name} is already in the toolkit ✓`);
+      } else collectCrystal(c);
       return;
     }
-    if (part === "bug") return squashBug(bugs[object.userData.bug]);
     if (part === "laptop") {
       avatar.runBuild(time);
-      particles.emit(avatar.group.position.clone().set(0, 2.2, 0.8), [palette.lime, palette.cyan, palette.violet], 22, { speed: 2.6, up: 3, life: 1 });
-      sfx.collect();
+      particles.emit(tmpV.set(0, 2.2, 0.8).clone().add(avatar.group.position), [palette.accent, palette.text], 14, { speed: 1.8, up: 2.4, life: 0.8, size: 0.7 });
       return hooks.onToast?.("npm run build → compiled successfully ✓");
     }
     if (part === "avatar") {
       avatar.wave(time);
-      return hooks.onToast?.("Hey! Hanan here. Poke the laptop, grab a crystal, squash a bug.");
+      hooks.onToast?.("Hi, I’m Hanan. Have a look around.");
     }
   }
 
@@ -401,86 +292,77 @@ export function createWorld({ container, sections, hooks }) {
     if (!drag || e.pointerId !== drag.id) return;
     const wasTap = drag.moved < 8;
     drag = null;
-    if (e.type === "pointercancel" || !wasTap || mode === "play") return;
+    if (e.type === "pointercancel" || !wasTap) return;
     const hit = pick(e.clientX, e.clientY);
     if (hit) activate(hit);
   };
   canvas.addEventListener("pointerup", endDrag);
   canvas.addEventListener("pointercancel", endDrag);
 
-  let hoverCabinet = -1; // pointer over a cabinet in the canvas
-  let cardCabinet = -1; // project card hovered in the page
+  let hoverStation = -1;
+  let cardStation = -1;
   window.addEventListener("pointermove", (e) => {
     pointer.x = e.clientX;
     pointer.y = e.clientY;
     pointer.has = true;
-    if (e.pointerType === "touch" || mode === "play" || e.target !== canvas) {
+    if (e.pointerType === "touch" || e.target !== canvas) {
       if (canvas.style.cursor) canvas.style.cursor = "";
-      hoverCabinet = -1;
+      hoverStation = -1;
       return;
     }
     const hit = pick(e.clientX, e.clientY);
-    canvas.style.cursor = hit ? "pointer" : "";
-    hoverCabinet = hit?.userData.part === "cabinet" ? hit.userData.index : -1;
+    canvas.style.cursor = hit ? "pointer" : mode === "play" ? "grab" : "";
+    hoverStation = hit?.userData.part === "station" ? hit.userData.station : -1;
   });
-  canvas.addEventListener("pointerleave", () => {
-    hoverCabinet = -1;
-  });
+  canvas.addEventListener("pointerleave", () => (hoverStation = -1));
 
-  // ---- game input --------------------------------------------------------------------------------------------------
-  const GAME_KEYS = new Set(["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", " ", "shift", "e", "escape"]);
+  // ---- keyboard ----------------------------------------------------------------------------------------------------------
+  const GAME_KEYS = new Set(["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", " ", "shift", "e"]);
   window.addEventListener("keydown", (e) => {
-    if (mode !== "play" || hooks.isModalOpen?.()) return;
+    if (mode !== "play" || hooks.isModalOpen?.() || e.metaKey || e.ctrlKey || e.altKey) return;
     const k = e.key.toLowerCase();
     if (!GAME_KEYS.has(k)) return;
+    const target = e.target;
+    if ((k === " " || k === "e") && target?.closest?.("button, a, input, textarea, select, [role=button]")) return;
     e.preventDefault();
     play.keys.add(k);
+    if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright"].includes(k)) play.travel = null;
     if (e.repeat) return;
-    if (k === "escape") hooks.onExit?.();
+    if (!play.moved) {
+      play.moved = true;
+      hooks.onFirstMove?.();
+    }
     if (k === " " && avatarState.y === 0) {
       avatarState.vy = JUMP_VELOCITY;
       avatarState.y = 0.001;
-      sfx.jump();
     }
     if (k === "shift" && time > play.dashReadyAt) {
       play.dashUntil = time + 0.22;
       play.dashReadyAt = time + 0.9;
-      sfx.dash();
     }
     if (k === "e") {
-      const near = nearestCabinet();
+      const near = nearestStation();
       if (near >= 0) {
         play.keys.clear();
         openStation(near);
-      } else hooks.onToast?.("Walk up to an arcade cabinet, then press E.");
+      } else hooks.onToast?.("Walk up to a cabinet or kiosk, then press E.");
     }
   });
   window.addEventListener("keyup", (e) => play.keys.delete(e.key.toLowerCase()));
   window.addEventListener("blur", () => play.keys.clear());
 
-  function nearestCabinet() {
-    let best = -1;
-    let bestD = 2.1;
-    cabinets.forEach((c, i) => {
-      const d = Math.hypot(c.position.x - avatar.group.position.x, c.position.z - avatar.group.position.z);
-      if (d < bestD) {
-        best = i;
-        bestD = d;
-      }
-    });
-    return best;
-  }
+  const nearestStation = () => nearestWithin(avatar.group.position, stations.map((s) => s.position), 2.2);
 
   compactMQ.addEventListener("change", () => {
-    if (mode === "play" && compactMQ.matches) hooks.onExit?.();
     resize();
+    hooks.onBreakpoint?.(compactMQ.matches);
   });
   canvas.addEventListener("webglcontextlost", (e) => {
     e.preventDefault();
     hooks.onContextLost?.();
   });
 
-  // ---- main loop -----------------------------------------------------------------------------------------------------------
+  // ---- main loop ------------------------------------------------------------------------------------------------------------
   let last = 0;
   function frame(now) {
     requestAnimationFrame(frame);
@@ -496,37 +378,29 @@ export function createWorld({ container, sections, hooks }) {
     const scroll = frameForScroll();
     const target = scroll.frame;
     const k = still ? 1 : 1 - Math.exp(-dt * 5);
-
     let desiredPos;
     let desiredLook;
     let desiredShiftX = target.shiftX;
     let desiredShiftY = target.shiftY;
     let desiredRot = target.rot;
-    let accentTarget;
 
     if (mode === "play") {
       updatePlay(dt);
       const p = avatar.group.position;
       const cosP = Math.cos(play.pitch);
-      desiredLook = tmpV.set(p.x, 1.3 + avatarState.y * 0.4, p.z).clone();
+      desiredLook = new THREE.Vector3(p.x, 1.35 + avatarState.y * 0.4, p.z);
       desiredPos = new THREE.Vector3(
         p.x + Math.sin(play.yaw) * cosP * play.dist,
-        1.3 + Math.sin(play.pitch) * play.dist,
+        1.35 + Math.sin(play.pitch) * play.dist,
         p.z + Math.cos(play.yaw) * cosP * play.dist,
       );
       desiredShiftX = desiredShiftY = 0;
       desiredRot = 0;
-      accentTarget = accentColors[0];
     } else {
       const c = cameraTarget(target);
       desiredPos = c.pos;
       desiredLook = c.look;
       const near = Math.round(scroll.progress);
-      accentTarget = tmpColor.copy(accentColors[Math.floor(scroll.progress)]).lerp(
-        accentColors[Math.min(Math.ceil(scroll.progress), accentColors.length - 1)],
-        scroll.progress - Math.floor(scroll.progress),
-      );
-      // In the work section the island turns to face the cabinet being read.
       const workWeight = clamp(1 - Math.abs(scroll.progress - 1), 0, 1);
       if (focusStation >= 0) desiredRot += CABINET_ANGLES[focusStation] * workWeight * (compactMQ.matches ? 1 : 0.55);
       if (still) desiredRot = 0;
@@ -542,19 +416,15 @@ export function createWorld({ container, sections, hooks }) {
     if (!initialised) {
       smooth.pos.copy(desiredPos);
       smooth.look.copy(desiredLook);
-      smooth.shiftX = desiredShiftX;
-      smooth.shiftY = desiredShiftY;
-      smooth.rot = desiredRot;
-      smooth.accent.copy(accentTarget);
+      Object.assign(smooth, { shiftX: desiredShiftX, shiftY: desiredShiftY, rot: desiredRot });
       initialised = true;
     }
-    const kc = mode === "play" ? (still ? 1 : 1 - Math.exp(-dt * 7)) : k;
+    const kc = mode === "play" ? (still ? 1 : 1 - Math.exp(-dt * 6)) : k;
     smooth.pos.lerp(desiredPos, kc);
     smooth.look.lerp(desiredLook, kc);
     smooth.shiftX += (desiredShiftX - smooth.shiftX) * k;
     smooth.shiftY += (desiredShiftY - smooth.shiftY) * k;
     smooth.rot += (desiredRot - smooth.rot) * (still ? 1 : 1 - Math.exp(-dt * 4));
-    smooth.accent.lerp(accentTarget, still ? 1 : 1 - Math.exp(-dt * 4));
 
     root.rotation.y = smooth.rot;
     camera.position.copy(smooth.pos);
@@ -563,19 +433,9 @@ export function createWorld({ container, sections, hooks }) {
       camera.setViewOffset(width, height, -smooth.shiftX * width, smooth.shiftY * height, width, height);
     } else camera.clearViewOffset();
 
-    island.setAccent(smooth.accent);
-    accentLight.color.copy(smooth.accent);
-    const hex = `#${smooth.accent.getHexString()}`;
-    if (hex !== lastAccent) {
-      lastAccent = hex;
-      hooks.onAccent?.(hex);
-    }
-
     updateScene(dt, still);
     renderer.render(scene, camera);
   }
-  let scrollSection = 0;
-  let lastAccent = "";
 
   function updatePlay(dt) {
     const keys = play.keys;
@@ -584,45 +444,32 @@ export function createWorld({ container, sections, hooks }) {
     if (dx || dz) play.lastInput = { x: dx, z: dz };
     const dashing = time < play.dashUntil;
     const input = dashing && !(dx || dz) ? play.lastInput : { x: dx, z: dz };
-    const facing = movePlayer(avatar.group.position, input.x, input.z, play.yaw, dt, dashing ? DASH_SPEED : WALK_SPEED);
-    if (facing !== null) avatarState.facing = facing;
-    if (dashing)
-      particles.emit(avatar.group.position.clone().setY(0.2), [palette.cyan, palette.violet], 2, { speed: 0.6, up: 0.4, life: 0.5, gravity: 0, size: 0.8 });
+    const pos = avatar.group.position;
+    if (play.travel && !(dx || dz)) {
+      const step = moveToward(pos, play.travel, DASH_SPEED * 0.8, dt);
+      if (step.arrived) play.travel = null;
+      else avatarState.facing = step.facing;
+    } else {
+      const facing = movePlayer(pos, input.x, input.z, play.yaw, dt, dashing ? DASH_SPEED : WALK_SPEED);
+      if (facing !== null) avatarState.facing = facing;
+    }
     const jump = stepJump(avatarState.y, avatarState.vy, dt);
     avatarState.y = jump.y;
     avatarState.vy = jump.vy;
-
-    collectSkills(avatar.group.position, crystals).forEach((c) => collectCrystal(c));
-
-    const { stomped, bumped } = resolveBugs(
-      { x: avatar.group.position.x, z: avatar.group.position.z, y: avatarState.y, vy: avatarState.vy },
-      bugs,
-    );
-    stomped.forEach((b) => {
-      squashBug(b);
-      avatarState.vy = JUMP_VELOCITY * 0.7;
-      avatarState.y = 0.02;
+    collectSkills(pos, crystals).forEach((c) => {
+      c.collected = false; // collectSkills flags it; collectCrystal owns the state change
+      collectCrystal(c);
     });
-    if (bumped.length && time - play.bumpAt > 1.2) {
-      play.bumpAt = time;
-      const b = bumped[0];
-      const away = new THREE.Vector3(avatar.group.position.x - b.position.x, 0, avatar.group.position.z - b.position.z).normalize();
-      avatar.group.position.addScaledVector(away, 0.8);
-      avatarState.vy = 3;
-      avatarState.y = 0.02;
-      sfx.bump();
-      hooks.onToast?.("Ouch! Jump on bugs, don’t walk into them.");
-    }
   }
 
   function updateScene(dt, still) {
-    const moving = mode === "play" && (play.keys.size > 0 || time < play.dashUntil);
+    const moving = mode === "play" && (play.keys.size > 0 || time < play.dashUntil || Boolean(play.travel));
+    const p = avatar.group.position;
     if (mode === "play") {
-      avatar.group.position.y = avatarState.y;
-      avatar.group.rotation.y += Math.atan2(Math.sin(avatarState.facing - avatar.group.rotation.y), Math.cos(avatarState.facing - avatar.group.rotation.y)) * Math.min(1, dt * 14);
+      p.y = avatarState.y;
+      const diff = Math.atan2(Math.sin(avatarState.facing - avatar.group.rotation.y), Math.cos(avatarState.facing - avatar.group.rotation.y));
+      avatar.group.rotation.y += diff * Math.min(1, dt * 14);
     } else {
-      // Walk back to the centre of the island and face the camera.
-      const p = avatar.group.position;
       p.x += (0 - p.x) * Math.min(1, dt * 5);
       p.z += (0 - p.z) * Math.min(1, dt * 5);
       p.y = 0;
@@ -630,73 +477,39 @@ export function createWorld({ container, sections, hooks }) {
       avatar.group.rotation.y += (0 - avatar.group.rotation.y) * Math.min(1, dt * 6);
     }
 
-    // The head follows the pointer, relative to where the avatar is on screen.
     let look = { x: 0, y: 0 };
     if (pointer.has && mode === "scroll" && !still) {
       const head = avatar.head.getWorldPosition(tmpV).project(camera);
       look = {
-        x: clamp(((pointer.x / width) * 2 - 1) - head.x, -1, 1),
-        y: clamp((-(pointer.y / height) * 2 + 1) - head.y, -1, 1),
+        x: clamp((pointer.x / width) * 2 - 1 - head.x, -1, 1),
+        y: clamp(-(pointer.y / height) * 2 + 1 - head.y, -1, 1),
       };
     }
-    avatar.update({
-      dt,
-      time,
-      moving,
-      airborne: avatarState.y > 0.02,
-      dashing: time < play.dashUntil,
-      look,
-      reduced: still,
-    });
-
+    avatar.update({ dt, time, moving, airborne: avatarState.y > 0.02, dashing: time < play.dashUntil, look, reduced: still });
     island.update(time, still);
     particles.update(dt);
 
     crystals.forEach((c, i) => {
-      c.group.position.y = 0.95 + (still ? 0 : Math.sin(time * 2 + i * 1.3) * 0.12);
-      c.body.rotation.y = still ? i : time * 1.2 + i;
+      c.group.position.y = 0.95 + (still ? 0 : Math.sin(time * 1.6 + i * 1.3) * 0.1);
+      c.body.rotation.y = still ? i : time * 0.9 + i;
       c.pulse = Math.max(0, c.pulse - dt * 2.5);
-      c.group.scale.setScalar((c.collected ? 0.7 : 1) + c.pulse * 0.45);
+      c.group.scale.setScalar((c.collected ? 0.75 : 1) + c.pulse * 0.4);
+      // Names appear only when relevant: near the avatar, or while reading the Skills section.
+      const close = Math.hypot(c.position.x - p.x, c.position.z - p.z) < 2.6;
+      c.tag.visible = mode === "play" ? close : scrollSection === 2 || c.pulse > 0;
     });
 
-    const near = mode === "play" ? nearestCabinet() : -1;
-    cabinets.forEach((c, i) => {
-      const wanted = i === near || i === hoverCabinet || i === cardCabinet || i === focusStation ? 1 : 0;
-      c.setHighlight(c.highlight + (wanted - c.highlight) * Math.min(1, dt * 8));
-      c.prompt.visible = i === near || i === hoverCabinet;
-      c.prompt.position.y = 3.25 + (still ? 0 : Math.sin(time * 4) * 0.06);
+    const near = mode === "play" ? nearestStation() : -1;
+    stations.forEach((s, i) => {
+      const projectFocus = s.kind === "project" && s.index === focusStation;
+      const wanted = i === near || i === hoverStation || i === cardStation || projectFocus ? 1 : 0;
+      s.setHighlight(s.highlight + (wanted - s.highlight) * Math.min(1, dt * 8));
+      s.prompt.visible = i === near || i === hoverStation;
+      s.prompt.position.y = 3.15 + (still ? 0 : Math.sin(time * 3.5) * 0.05);
     });
-
-    // Bugs wander, wobble and respawn.
-    bugs.forEach((b) => {
-      const g = b.model.group;
-      if (b.alive) {
-        updateBug(b, dt, time);
-        g.rotation.y = b.heading;
-        b.model.body.position.y = 0.25 + Math.abs(Math.sin(time * 9 + b.seed)) * 0.05;
-      } else if (b.squashT >= 0) {
-        b.squashT += dt;
-        g.scale.set(1.3, Math.max(0.05, 1 - b.squashT * 8), 1.3);
-        if (b.squashT > 0.25) {
-          g.visible = false;
-          b.squashT = -1;
-        }
-      } else if (time > b.respawnAt && !g.visible) spawnBug(b);
-    });
-
-    // Headphone sparkles.
-    if (!still && time - noteAt > 0.55) {
-      noteAt = time;
-      const world = avatar.head.getWorldPosition(new THREE.Vector3());
-      root.worldToLocal(world);
-      world.y += 0.9;
-      world.x += (Math.random() - 0.5) * 1.2;
-      particles.emit(world, [palette.magenta, palette.cyan, palette.lime, palette.amber], 1, { speed: 0.3, up: 1.1, gravity: -0.3, life: 1.6, size: 0.9 });
-    }
   }
-  let noteAt = 0;
 
-  // ---- public api ---------------------------------------------------------------------------------------------------------------
+  // ---- public api ----------------------------------------------------------------------------------------------------------------
   const api = {
     get mode() {
       return mode;
@@ -704,54 +517,46 @@ export function createWorld({ container, sections, hooks }) {
     get state() {
       return snapshot();
     },
-    get canPlay() {
-      return !compactMQ.matches;
-    },
-    start() {
-      if (compactMQ.matches) return false;
-      mode = "play";
-      root.rotation.y = smooth.rot = nearestTurn(smooth.rot, 0);
-      play.yaw = 0;
+    setMode(next) {
+      if (next === mode) return;
+      mode = next;
       play.keys.clear();
-      sfx.setEnabled(true);
-      avatar.group.position.set(0, 0, 0.6);
-      hooks.onToast?.("WASD to move · Space to jump · Shift to dash · E at a cabinet");
-      return true;
+      play.travel = null;
+      if (next === "play") {
+        smooth.rot = nearestTurn(smooth.rot, 0);
+        play.yaw = 0;
+        avatar.group.position.set(0, 0, 1.4);
+        avatarState.facing = 0;
+      } else smooth.rot = nearestTurn(smooth.rot, frameForScroll().frame.rot);
     },
-    exit() {
-      mode = "scroll";
+    travel(name) {
+      const stop = TRAVEL_STOPS[name];
+      if (!stop || mode !== "play") return;
       play.keys.clear();
-      sfx.setEnabled(false);
-      smooth.rot = nearestTurn(smooth.rot, frameForScroll().frame.rot);
+      play.travel = { x: stop[0], z: stop[1] };
+      if (!play.moved) {
+        play.moved = true;
+        hooks.onFirstMove?.();
+      }
     },
-    restart,
     wave() {
       avatar.wave(time);
-      hooks.onToast?.("Hey! Hanan here. Welcome to my little world.");
     },
     collectSkill(i) {
-      const crystal = crystals[i];
-      if (!crystal) return;
-      if (crystal.collected) {
-        crystal.pulse = 1;
-        particles.emit(crystal.position, [crystal.color], 10, { speed: 2, life: 0.7 });
-      } else collectCrystal(crystal, { silent: true });
+      const c = crystals[i];
+      if (!c) return;
+      if (c.collected) c.pulse = 1;
+      else collectCrystal(c, { silent: true });
     },
-    highlightStation(i) {
-      cardCabinet = i;
+    highlightProject(i) {
+      cardStation = i;
     },
     focusStation(i) {
       focusStation = i;
     },
-    setMuted(value) {
-      sfx.setMuted(value);
-    },
-    get muted() {
-      return sfx.muted;
-    },
     measure,
     /** Read-only internals for QA: open the site with ?debug and use window.__world.debug. */
-    debug: { camera, smooth, avatar, root, game, crystals, bugs, play, cabinets },
+    debug: { camera, smooth, avatar, root, game, crystals, stations, play, avatarState },
   };
 
   requestAnimationFrame(frame);

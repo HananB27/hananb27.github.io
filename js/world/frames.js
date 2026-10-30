@@ -1,12 +1,11 @@
 /**
- * Camera keyframes for the scroll-driven “3D website”, one per page section:
- * home, work, skills, about, contact. `fitW`/`fitH` are the world-space width
- * and height the camera must keep in view, so one set of numbers frames the
- * scene correctly on any aspect ratio. `rot` is the island's spin (radians).
+ * Camera keyframes for the scroll-driven “3D website” (phones, tablets and the
+ * desktop classic view), one per page section: home, work, skills, about,
+ * contact. `fitW`/`fitH` are the world-space width and height the camera must
+ * keep in view, so one set of numbers frames the scene on any aspect ratio.
+ * `rot` is the island's spin in radians.
  */
 const TURN = Math.PI * 2;
-
-export const ACCENTS = ["violet", "cyan", "lime", "amber", "magenta"];
 
 export const FRAMES = {
   wide: [

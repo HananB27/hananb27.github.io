@@ -1,4 +1,4 @@
-/** Content for the portfolio. Colours are palette keys (see css/tokens.css). */
+/** Content for the portfolio. */
 export const projects = [
   {
     id: "search",
@@ -9,7 +9,6 @@ export const projects = [
       "Web, image, and advanced search with a Google-inspired interface and an “I’m Feeling Lucky” shortcut.",
     tags: ["HTML", "CSS", "Search"],
     url: "https://github.com/HananB27/Google-search",
-    color: "cyan",
   },
   {
     id: "auction",
@@ -20,7 +19,6 @@ export const projects = [
       "Create listings, bid, save a watchlist, explore categories, and discuss your next find.",
     tags: ["Django", "Python", "E-commerce"],
     url: "https://github.com/HananB27/E-Commerce-Django-website",
-    color: "amber",
   },
   {
     id: "wiki",
@@ -31,7 +29,6 @@ export const projects = [
       "Search, create, and edit Markdown encyclopedia entries, or discover something unexpected with a random page.",
     tags: ["Django", "Markdown", "Search"],
     url: "https://github.com/HananB27/Wikipedia-made-with-Django",
-    color: "lime",
   },
   {
     id: "mail",
@@ -42,17 +39,34 @@ export const projects = [
       "Send and receive messages, reply, and archive conversations through an interactive API-powered client.",
     tags: ["JavaScript", "API", "Email"],
     url: "https://github.com/HananB27/Mail",
-    color: "magenta",
   },
 ];
 
 export const skills = [
-  { name: "JavaScript", color: "amber", icon: "assets/icons/javascript.png" },
-  { name: "Django", color: "lime", icon: "assets/icons/django.png" },
-  { name: "React", color: "cyan", icon: "assets/icons/react.png" },
-  { name: "Next.js", color: "violet", icon: "assets/icons/nextjs.png" },
-  { name: "Angular", color: "coral", icon: "assets/icons/angular.png" },
+  { name: "JavaScript", icon: "assets/icons/javascript.png" },
+  { name: "Django", icon: "assets/icons/django.png" },
+  { name: "React", icon: "assets/icons/react.png" },
+  { name: "Next.js", icon: "assets/icons/nextjs.png" },
+  { name: "Angular", icon: "assets/icons/angular.png" },
 ];
 
-/** How many squashed bugs (plus all skills) it takes to “ship the release”. */
-export const BUGS_TO_SHIP = 5;
+/** Standing kiosks on the island that open panels in game mode. */
+export const kiosks = [
+  { id: "about", label: "ABOUT", icon: "person" },
+  { id: "contact", label: "CONTACT", icon: "mail" },
+];
+
+export const profile = {
+  name: "Hanan Bajramović",
+  role: "Full stack developer",
+  intro: "Hey, I’m Hanan. I’m a full stack developer who enjoys making the web feel a little more human.",
+  about: [
+    "My software engineering background at the International University of Sarajevo shapes how I approach problems: understand the people, untangle the complexity, and build something useful.",
+    "I work across Django, React, Next.js, Angular, and JavaScript, connecting thoughtful interfaces with reliable foundations.",
+  ],
+  email: "hananbajramovic075@gmail.com",
+  phone: "+38761501740",
+  github: "https://github.com/HananB27",
+  linkedin: "https://www.linkedin.com/in/hananb27-498683229",
+  resume: "Resume.pdf",
+};

@@ -1,31 +1,26 @@
-/* Neon Arcade palette — single source of truth.
-   The 3D world reads these custom properties at runtime (js/world/palette.js),
-   so changing a colour here recolours the whole site and the WebGL scene. */
+/* Graphite & Mint palette — single source of truth.
+   One accent, one warm signal, neutral steel. The 3D world reads these custom
+   properties at runtime (js/world/palette.js), so editing a token recolours the
+   page and the WebGL scene together. */
 :root {
-  --bg: #0d0a24;
-  --bg-2: #171238;
-  --bg-3: #221a52;
-  --panel: rgba(23, 18, 56, 0.72);
-  --line: rgba(190, 176, 255, 0.2);
+  --bg: #0a0c10;
+  --bg-2: #11141b;
+  --bg-3: #1a1f2a;
+  --line: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.22);
 
-  --text: #f6f3ff;
-  --muted: #bdb5e6;
+  --text: #eef1f6;
+  --muted: #98a2b3;
 
-  --violet: #8b5cff;
-  --magenta: #ff4fb8;
-  --cyan: #2be4ff;
-  --lime: #b5ff4d;
-  --amber: #ffc83d;
-  --coral: #ff6b5e;
+  --accent: #5eead4;
+  --warm: #ffb454;
+  --steel: #8b98b0;
 
-  /* Set by JS while scrolling: the accent of the section currently in view. */
-  --accent: var(--violet);
+  --font-display: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  --font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "Space Mono", ui-monospace, "SF Mono", Menlo, monospace;
-
-  --radius: 22px;
-  --gutter: clamp(20px, 5vw, 72px);
+  --radius: 12px;
+  --gutter: clamp(20px, 4.5vw, 64px);
   --z-canvas: 0;
   --z-content: 2;
   --z-header: 10;

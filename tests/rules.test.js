@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  movePlayer, stepJump, collectSkills, updateBug, resolveBugs, sectionProgress, nearestTurn,
+  movePlayer, stepJump, collectSkills, moveToward, nearestWithin, sectionProgress, nearestTurn,
   ISLAND_RADIUS, WALK_SPEED, JUMP_VELOCITY,
 } from "../js/rules.js";
 
@@ -48,27 +48,22 @@ test("each crystal scores once, only when close enough", () => {
   assert.equal(total, 5);
 });
 
-test("bugs wander but stay on the island", () => {
-  const bug = { alive: true, heading: 0.3, speed: 0.9, seed: 3, position: { x: 5.7, z: 0 } };
-  for (let i = 0; i < 6000; i++) updateBug(bug, 1 / 60, i / 60);
-  assert.ok(Math.hypot(bug.position.x, bug.position.z) <= ISLAND_RADIUS);
-  const dead = { ...bug, alive: false, position: { x: 1, z: 1 } };
-  updateBug(dead, 1, 1);
-  assert.deepEqual(dead.position, { x: 1, z: 1 });
+test("autopilot reaches its target without overshooting and reports heading", () => {
+  const p = { x: 0, z: 0 };
+  let result;
+  for (let i = 0; i < 1000; i++) {
+    result = moveToward(p, { x: 3, z: -4 }, 8, 1 / 60);
+    if (result.arrived) break;
+  }
+  assert.ok(result.arrived);
+  assert.ok(Math.hypot(p.x - 3, p.z + 4) <= 0.25 + 1e-9);
+  assert.ok(Math.abs(moveToward({ x: 0, z: 0 }, { x: 5, z: 0 }, 8, 0.016).facing - Math.PI / 2) < 1e-9);
 });
 
-test("landing on a bug stomps it; walking into one only bumps", () => {
-  const mk = () => [{ alive: true, position: { x: 0, z: 0 } }];
-  let r = resolveBugs({ x: 0.2, z: 0, y: 0.6, vy: -3 }, mk());
-  assert.equal(r.stomped.length, 1);
-  assert.equal(r.bumped.length, 0);
-  r = resolveBugs({ x: 0.2, z: 0, y: 0, vy: 0 }, mk());
-  assert.equal(r.stomped.length, 0);
-  assert.equal(r.bumped.length, 1);
-  r = resolveBugs({ x: 0.2, z: 0, y: 0.6, vy: 3 }, mk());
-  assert.equal(r.stomped.length + r.bumped.length, 0);
-  r = resolveBugs({ x: 4, z: 4, y: 0, vy: 0 }, mk());
-  assert.equal(r.stomped.length + r.bumped.length, 0);
+test("nearestWithin picks the closest point inside reach, otherwise -1", () => {
+  const pts = [{ x: 3, z: 0 }, { x: 1, z: 0 }, { x: -1.5, z: 0 }];
+  assert.equal(nearestWithin({ x: 0, z: 0 }, pts, 2), 1);
+  assert.equal(nearestWithin({ x: 0, z: 9 }, pts, 2), -1);
 });
 
 test("scroll progress holds on sections and is monotonic", () => {

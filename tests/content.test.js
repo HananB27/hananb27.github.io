@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
-import { projects, skills, BUGS_TO_SHIP } from "../js/data.js";
+import { projects, skills, kiosks, profile } from "../js/data.js";
 
 const read = (path) => readFileSync(new URL("../" + path, import.meta.url), "utf8");
 const html = read("index.html");
@@ -14,20 +14,27 @@ test("all four project repositories are linked in the page and have content", ()
     assert.ok(p.description.length > 30);
     assert.ok(p.tags.length >= 3);
   }
-  assert.equal(new Set(projects.map((p) => p.color)).size, 4);
   assert.equal(new Set(skills.map((s) => s.name)).size, 5);
-  assert.equal(BUGS_TO_SHIP, 5);
+  assert.deepEqual(kiosks.map((k) => k.id), ["about", "contact"]);
 });
 
-test("every palette colour referenced by data exists in the CSS tokens", () => {
-  for (const key of [...projects, ...skills].map((x) => x.color)) assert.match(tokens, new RegExp(`--${key}:\\s*#`));
+test("contact details in the data match the static page", () => {
+  for (const value of [profile.email, profile.github, profile.linkedin, profile.phone, profile.resume])
+    assert.ok(html.includes(value), value);
+});
+
+test("the palette is restrained: one accent, one warm signal, neutrals", () => {
+  for (const token of ["bg", "bg-2", "bg-3", "text", "muted", "accent", "warm", "steel"])
+    assert.match(tokens, new RegExp(`--${token}:\\s*#`));
+  const hexes = new Set(tokens.match(/#[0-9a-f]{6}/gi));
+  assert.ok(hexes.size <= 9, `too many colours: ${hexes.size}`);
 });
 
 test("entry point, modules, assets and résumé exist", () => {
   const files = [
     "css/tokens.css", "css/style.css", "js/main.js", "js/ui.js", "js/data.js", "js/rules.js",
     "js/world/index.js", "js/world/avatar.js", "js/world/island.js", "js/world/props.js",
-    "js/world/particles.js", "js/world/frames.js", "js/world/palette.js", "js/world/sfx.js",
+    "js/world/particles.js", "js/world/frames.js", "js/world/palette.js",
     "vendor/three.module.min.js", "vendor/THREE-LICENSE.txt", "Resume.pdf",
     ...skills.map((s) => s.icon),
   ];
@@ -36,7 +43,7 @@ test("entry point, modules, assets and résumé exist", () => {
 
 test("page has landmarks, five scroll scenes and accessible dialogs", () => {
   assert.equal((html.match(/data-scene/g) || []).length, 5);
-  for (const needle of ['<main id="main">', 'class="skip"', 'aria-labelledby="dialog-title"', 'lang="en"'])
+  for (const needle of ['<main id="main">', 'class="skip"', 'aria-labelledby="panel-title"', 'lang="en"'])
     assert.ok(html.includes(needle), needle);
 });
 

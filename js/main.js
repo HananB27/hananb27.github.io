@@ -4,77 +4,108 @@ import { ui } from "./ui.js";
 const $ = (selector) => document.querySelector(selector);
 const root = document.documentElement;
 const desktop = matchMedia("(min-width: 900px) and (pointer: fine)");
+const CLASSIC_KEY = "hb-classic";
 
 ui.init();
 $("#year").textContent = new Date().getFullYear();
 
-// ---- skills grid (built from data so 2D and 3D always agree) ----------------------------------------------
+// ---- skills (built from data so page and 3D scene agree) -------------------------------------------------------
 const skillGrid = $("#skill-grid");
+const pips = $("#toolkit-pips");
 skills.forEach((skill, i) => {
   const li = document.createElement("li");
   const button = document.createElement("button");
   button.type = "button";
   button.className = "skill";
-  button.style.setProperty("--c", `var(--${skill.color})`);
-  button.setAttribute("aria-pressed", "false");
-  button.innerHTML = `<img src="${skill.icon}" alt="" width="34" height="34" /><span>${skill.name}<small>Locked</small></span>`;
   button.dataset.index = i;
+  button.setAttribute("aria-pressed", "false");
+  button.innerHTML = `<img src="${skill.icon}" alt="" width="30" height="30" /><span>${skill.name}<small>Locked</small></span>`;
   li.append(button);
   skillGrid.append(li);
+  pips.append(document.createElement("i"));
 });
 
-// ---- scroll progress + nav state ---------------------------------------------------------------------------------
+// ---- scroll progress and nav state (scroll layout) ---------------------------------------------------------------
 const sections = [...document.querySelectorAll("[data-scene]")];
 const dots = [...document.querySelectorAll("[data-dot]")];
 const navLinks = [...document.querySelectorAll(".site-nav a")];
 const progress = $("#progress");
-function onScroll() {
-  const max = document.documentElement.scrollHeight - innerHeight;
-  progress.style.setProperty("--p", max > 0 ? (scrollY / max).toFixed(4) : 0);
-}
-addEventListener("scroll", onScroll, { passive: true });
-onScroll();
-
+addEventListener(
+  "scroll",
+  () => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    progress.style.setProperty("--p", max > 0 ? (scrollY / max).toFixed(4) : 0);
+  },
+  { passive: true },
+);
 function setSection(index) {
   dots.forEach((d, i) => (i === index ? d.setAttribute("aria-current", "true") : d.removeAttribute("aria-current")));
   navLinks.forEach((a) => {
-    const active = a.getAttribute("href") === `#${sections[index]?.id}`;
-    if (active) a.setAttribute("aria-current", "true");
+    if (root.classList.contains("mode-game")) return;
+    if (a.getAttribute("href") === `#${sections[index]?.id}`) a.setAttribute("aria-current", "true");
     else a.removeAttribute("aria-current");
   });
 }
 setSection(0);
-// Fallback section tracking (also used when WebGL is unavailable).
 const sectionObserver = new IntersectionObserver(
-  (entries) => {
-    for (const entry of entries) if (entry.isIntersecting) setSection(sections.indexOf(entry.target));
-  },
+  (entries) => entries.forEach((e) => e.isIntersecting && setSection(sections.indexOf(e.target))),
   { rootMargin: "-45% 0px -45% 0px" },
 );
 sections.forEach((s) => sectionObserver.observe(s));
 
-// ---- 3D world --------------------------------------------------------------------------------------------------------
+// ---- 3D world ----------------------------------------------------------------------------------------------------------
 let world = null;
-const play = [$("#play"), $("#play-hero")];
-
-function updatePlayButtons() {
-  play.forEach((button) => (button.hidden = !(world && desktop.matches)));
-  $("#hint").textContent = desktop.matches
-    ? "Drag to spin me · Scroll to travel · Click anything that glows"
-    : "Drag to spin me · Scroll to travel · Tap anything that glows";
+let classic = false;
+try {
+  classic = localStorage.getItem(CLASSIC_KEY) === "1";
+} catch {
+  /* storage blocked: default to the game view */
 }
-desktop.addEventListener("change", updatePlayButtons);
-updatePlayButtons();
+const wantsGame = () => Boolean(world) && desktop.matches && !classic;
+
+function applyView() {
+  const game = wantsGame();
+  root.classList.toggle("mode-game", game);
+  $("#game-ui").hidden = !game;
+  const toggle = $("#view-toggle");
+  toggle.hidden = !(world && desktop.matches);
+  toggle.textContent = game ? "Classic view" : "Game view";
+  toggle.setAttribute("aria-pressed", String(!game));
+  navLinks.forEach((a) => a.removeAttribute("aria-current"));
+  if (world) {
+    world.setMode(game ? "play" : "scroll");
+    if (game) scrollTo(0, 0);
+    world.measure();
+  }
+  $("#hint").textContent = desktop.matches
+    ? "Drag to spin · Scroll to travel · Click what glows"
+    : "Drag to spin · Scroll to travel · Tap what glows";
+}
+desktop.addEventListener("change", applyView);
+$("#view-toggle").addEventListener("click", () => {
+  classic = wantsGame();
+  try {
+    localStorage.setItem(CLASSIC_KEY, classic ? "1" : "0");
+  } catch {
+    /* ignore */
+  }
+  applyView();
+});
+
+// In game view the nav fast-travels the avatar; elsewhere it scrolls as usual.
+document.querySelectorAll("[data-travel]").forEach((link) =>
+  link.addEventListener("click", (e) => {
+    if (!root.classList.contains("mode-game")) return;
+    e.preventDefault();
+    const target = link.dataset.travel;
+    if (target !== "home") world.travel(target);
+  }),
+);
 
 function renderState(state) {
   $("#pill-skills").textContent = state.skillCount;
-  $("#pill-bugs").textContent = Math.min(state.bugs, state.bugsTotal);
   $("#hud-skills").textContent = state.skillCount;
-  $("#hud-bugs").textContent = Math.min(state.bugs, state.bugsTotal);
-  $("#score-pill").setAttribute(
-    "aria-label",
-    `Progress: ${state.skillCount} of ${state.skillTotal} skills, ${Math.min(state.bugs, state.bugsTotal)} of ${state.bugsTotal} bugs`,
-  );
+  $("#score-pill").setAttribute("aria-label", `Skills unlocked: ${state.skillCount} of ${state.skillTotal}`);
   $("#score-pill").classList.remove("bump");
   void $("#score-pill").offsetWidth;
   $("#score-pill").classList.add("bump");
@@ -82,6 +113,7 @@ function renderState(state) {
     button.setAttribute("aria-pressed", String(state.skills[i]));
     button.querySelector("small").textContent = state.skills[i] ? "Unlocked ✓" : "Locked";
   });
+  [...pips.children].forEach((pip, i) => pip.classList.toggle("on", state.skills[i]));
 }
 
 async function boot() {
@@ -92,26 +124,25 @@ async function boot() {
     world = createWorld({
       container: $("#stage"),
       sections,
+      mode: desktop.matches && !classic ? "play" : "scroll",
       hooks: {
-        onProject: ui.openProject,
+        onOpen: ui.open,
         onToast: ui.toast,
         onState: renderState,
         onSection: setSection,
-        onAccent: (hex) => root.style.setProperty("--accent", hex),
-        onWin: () => ui.showWin(),
-        onExit: exitGame,
         isModalOpen: ui.isModalOpen,
+        onFirstMove: () => $("#controls").classList.add("quiet"),
+        onComplete: () => ui.toast("Toolkit complete. The contact kiosk is open for business."),
         onContextLost: () => {
-          exitGame();
           root.classList.add("no-webgl");
-          ui.toast("3D paused. Everything is still available below.");
+          root.classList.remove("mode-game");
+          $("#game-ui").hidden = true;
+          ui.toast("3D paused. Everything is still available on the page.");
         },
       },
     });
     if (new URLSearchParams(location.search).has("debug")) window.__world = world;
-    $("#stage-loading")?.remove();
-    play.forEach((b) => (b.disabled = false));
-    updatePlayButtons();
+    applyView();
     bindWorldUi();
   } catch (error) {
     console.error("3D world unavailable:", error);
@@ -125,18 +156,17 @@ function bindWorldUi() {
     if (!button) return;
     const i = Number(button.dataset.index);
     world.collectSkill(i);
-    if (!world.state.skills[i]) return;
-    ui.toast(`${skills[i].name} unlocked · ${world.state.skillCount} of ${skills.length}`);
+    if (world.state.skills[i]) ui.toast(`${skills[i].name} unlocked · ${world.state.skillCount} of ${skills.length}`);
   });
 
-  // Project cards drive the 3D cabinets: hover highlights, scrolling focuses.
+  // Project cards drive the 3D cabinets in the scroll layout.
   const cards = [...document.querySelectorAll(".project")];
   cards.forEach((card) => {
     const i = Number(card.dataset.index);
-    card.addEventListener("pointerenter", () => world.highlightStation(i));
-    card.addEventListener("pointerleave", () => world.highlightStation(-1));
-    card.addEventListener("focusin", () => world.highlightStation(i));
-    card.addEventListener("focusout", () => world.highlightStation(-1));
+    card.addEventListener("pointerenter", () => world.highlightProject(i));
+    card.addEventListener("pointerleave", () => world.highlightProject(-1));
+    card.addEventListener("focusin", () => world.highlightProject(i));
+    card.addEventListener("focusout", () => world.highlightProject(-1));
   });
   const cardObserver = new IntersectionObserver(
     (entries) => {
@@ -148,51 +178,7 @@ function bindWorldUi() {
     { rootMargin: "-40% 0px -40% 0px" },
   );
   cards.forEach((c) => cardObserver.observe(c));
-  const work = $("#work");
-  new IntersectionObserver(([entry]) => !entry.isIntersecting && world.focusStation(-1)).observe(work);
-
-  // Game mode
-  play.forEach((button) => button.addEventListener("click", enterGame));
-  $("#exit").addEventListener("click", exitGame);
-  $("#restart").addEventListener("click", () => {
-    world.restart();
-    ui.hideWin();
-    ui.toast("Fresh build. Go find those crystals.");
-  });
-  $("#win-close").addEventListener("click", ui.hideWin);
-  const mute = $("#mute");
-  const syncMute = () => {
-    mute.textContent = world.muted ? "Sound off" : "Sound on";
-    mute.setAttribute("aria-pressed", String(world.muted));
-  };
-  syncMute();
-  mute.addEventListener("click", () => {
-    world.setMuted(!world.muted);
-    syncMute();
-  });
-  addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !$("#win").hidden) ui.hideWin();
-    if (e.key.toLowerCase() === "m" && world.mode === "play" && !ui.isModalOpen()) mute.click();
-  });
-}
-
-let returnFocus = null;
-function enterGame() {
-  if (!world?.start()) return;
-  returnFocus = document.activeElement;
-  document.body.classList.add("playing");
-  $("#hud").hidden = false;
-  [...document.querySelectorAll("header.site-header, main, .dots")].forEach((el) => (el.inert = true));
-  $("#exit").focus({ preventScroll: true });
-}
-function exitGame() {
-  if (!world || world.mode !== "play") return;
-  world.exit();
-  document.body.classList.remove("playing");
-  $("#hud").hidden = true;
-  ui.hideWin();
-  [...document.querySelectorAll("header.site-header, main, .dots")].forEach((el) => (el.inert = false));
-  returnFocus?.focus({ preventScroll: true });
+  new IntersectionObserver(([entry]) => !entry.isIntersecting && world.focusStation(-1)).observe($("#work"));
 }
 
 boot();

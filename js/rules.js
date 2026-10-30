@@ -64,40 +64,33 @@ export function collectSkills(position, crystals, reach = 0.85) {
   });
 }
 
-/** Lazy wandering for bug critters; they turn back when near the island edge. */
-export function updateBug(bug, delta, time, radius = ISLAND_RADIUS - 0.7) {
-  if (!bug.alive) return;
-  const dt = clamp(delta, 0, 0.05);
-  bug.heading += Math.sin(time * 1.3 + bug.seed * 7) * dt * 2.2;
-  const r = Math.hypot(bug.position.x, bug.position.z);
-  if (r > radius) {
-    const inward = Math.atan2(-bug.position.x, -bug.position.z);
-    let diff = inward - bug.heading;
-    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-    bug.heading += diff * Math.min(1, dt * 4);
-  }
-  bug.position.x += Math.sin(bug.heading) * bug.speed * dt;
-  bug.position.z += Math.cos(bug.heading) * bug.speed * dt;
+/**
+ * Autopilot for “fast travel”: steps `position` toward `target` and reports the
+ * heading. `arrived` flips once within `stopAt`.
+ */
+export function moveToward(position, target, speed, delta, stopAt = 0.25) {
+  const dx = target.x - position.x;
+  const dz = target.z - position.z;
+  const distance = Math.hypot(dx, dz);
+  if (distance <= stopAt) return { arrived: true, facing: null };
+  const step = Math.min(speed * clamp(delta, 0, 0.05), distance);
+  position.x += (dx / distance) * step;
+  position.z += (dz / distance) * step;
+  return { arrived: false, facing: Math.atan2(dx, dz) };
 }
 
-/**
- * Splits bug contacts into stomps (landing on top while falling) and bumps
- * (touching from the side). Stomped bugs are marked dead here.
- */
-export function resolveBugs(player, bugs) {
-  const stomped = [];
-  const bumped = [];
-  for (const bug of bugs) {
-    if (!bug.alive) continue;
-    const d = Math.hypot(bug.position.x - player.x, bug.position.z - player.z);
-    if (d < 0.8 && player.y > 0.2 && player.vy <= 0) {
-      bug.alive = false;
-      stomped.push(bug);
-    } else if (d < 0.55 && player.y <= 0.2) {
-      bumped.push(bug);
+/** Nearest point of interest within `reach`, or -1. `points` need x and z. */
+export function nearestWithin(position, points, reach) {
+  let best = -1;
+  let bestDistance = reach;
+  points.forEach((p, i) => {
+    const d = Math.hypot(p.x - position.x, p.z - position.z);
+    if (d < bestDistance) {
+      best = i;
+      bestDistance = d;
     }
-  }
-  return { stomped, bumped };
+  });
+  return best;
 }
 
 /**
