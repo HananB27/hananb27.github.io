@@ -41,8 +41,8 @@ function mulberry32(seed) {
  * simply where the two meet and it follows the curls without any clipping.
  */
 function createHairGeometry() {
-  const WIDTH = 128;
-  const HEIGHT = 88;
+  const WIDTH = 160;
+  const HEIGHT = 108;
   const SKULL = [0.45, 0.55, 0.47];
   const geometry = new THREE.SphereGeometry(1, WIDTH, HEIGHT);
   const position = geometry.attributes.position;
@@ -77,7 +77,8 @@ function createHairGeometry() {
       if (q < 1) dome = Math.max(dome, Math.sqrt(1 - q));
     }
     // Curls reach past the hairline, which scallops the edge along the forehead.
-    const cover = smoothstep((v.y - hairline + 0.22 * dome - 0.06) / 0.05);
+    // The fade spans several mesh rows; any tighter and the edge turns stair-stepped.
+    const cover = smoothstep((v.y - hairline + 0.22 * dome - 0.02) / 0.13);
     const thickness = 0.05 + 0.05 * Math.max(v.y, 0) + 0.13 * dome;
     position.setXYZ(i, ...v.clone().multiplyScalar(skull - 0.05 * (1 - cover) + cover * thickness).toArray());
     shade.lerpColors(crease, crown, dome * dome).toArray(colors, i * 3);
