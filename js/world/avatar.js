@@ -10,7 +10,6 @@ import * as THREE from "../../vendor/three.module.min.js";
 const SKIN = 0xe0b08e;
 const SKIN_SHADE = 0xcf9a78;
 const HAIR = 0x2b1c18;
-const HAIR_LIGHT = 0x3f2a21;
 const JACKET = 0xd8c6a0;
 const JACKET_SHADE = 0xc3b088;
 const KNIT = 0xf2ead9;
@@ -19,7 +18,6 @@ const DENIM_SEAM = 0x4a5578;
 const SNEAKER = 0xf4f0e8;
 const SOLE = 0xd9d3c6;
 const FRAME = 0x4a2a14;
-const FRAME_LIGHT = 0x8a5a2c;
 const DARK = 0x16141c;
 
 function mulberry32(seed) {
@@ -232,89 +230,65 @@ export function createAvatar(palette) {
   const head = new THREE.Group();
   head.position.set(0, 1.98, 0);
   rig.add(head);
-  const skull = sphere(0.5, SKIN, head, [0, 0.44, 0], "avatar", 3);
-  skull.scale.set(0.9, 1.08, 0.94);
-  const jaw = sphere(0.36, SKIN, head, [0, 0.2, 0.06], "avatar", 3);
-  jaw.scale.set(1, 0.9, 0.9);
-  for (const s of [-1, 1]) sphere(0.075, SKIN_SHADE, head, [s * 0.44, 0.38, 0.0], "avatar", 1).scale.set(0.55, 1, 0.8);
+  // One smooth head shape, tapered towards the chin. Sphere normals are kept on purpose.
+  const skullGeo = new THREE.SphereGeometry(0.5, 36, 28);
+  const skullPos = skullGeo.attributes.position;
+  for (let i = 0; i < skullPos.count; i++) {
+    const t = Math.max(0, (0.05 - skullPos.getY(i)) / 0.55);
+    skullPos.setX(i, skullPos.getX(i) * (1 - 0.28 * t * t));
+    skullPos.setZ(i, skullPos.getZ(i) * (1 - 0.12 * t * t));
+  }
+  add(skullGeo, mat(SKIN), head, [0, 0.44, 0], "avatar").scale.set(0.9, 1.1, 0.94);
 
-  // Face: sclera, iris, pupil, lids, brows, cheeks, nose, lips. Clean-shaven.
+  // Simple face: dot eyes, brows, a small nose and one mouth line. Clean-shaven.
   const eyes = [];
   for (const s of [-1, 1]) {
-    const eye = new THREE.Group();
-    eye.position.set(s * 0.18, 0.44, 0.425);
-    head.add(eye);
-    sphere(0.062, 0xf7f3ee, eye, [0, 0, 0], undefined, 2).scale.set(1.1, 0.95, 0.5);
-    sphere(0.04, 0x4a3022, eye, [s * 0.004, 0, 0.022], undefined, 2).scale.set(1, 1, 0.4);
-    sphere(0.02, 0x0c0a0a, eye, [s * 0.004, 0, 0.034], undefined, 1).scale.set(1, 1, 0.4);
-    sphere(0.009, 0xffffff, eye, [s * 0.016, 0.012, 0.04], undefined, 0);
-    const lid = sphere(0.066, SKIN, eye, [0, 0.075, 0.006], undefined, 1);
-    lid.scale.set(1.12, 0.22, 0.55);
-    eyes.push({ eye, lid, baseX: s * 0.18 });
-    const brow = box(0.2, 0.04, 0.05, 0x2a1b15, head, [s * 0.185, 0.575, 0.435], "avatar");
-    brow.rotation.z = s * -0.12;
-    sphere(0.045, SKIN_SHADE, head, [s * 0.27, 0.3, 0.37], undefined, 1).scale.set(1.2, 0.8, 0.5);
+    const eye = sphere(0.045, 0x1a1412, head, [s * 0.19, 0.43, 0.44], undefined, 2);
+    eye.scale.set(1, 1.25, 0.5);
+    eyes.push(eye);
+    const brow = box(0.17, 0.032, 0.04, HAIR, head, [s * 0.19, 0.58, 0.44], "avatar");
+    brow.rotation.z = s * -0.08;
   }
-  box(0.04, 0.17, 0.06, SKIN_SHADE, head, [0, 0.4, 0.46], "avatar");
-  sphere(0.062, 0xd29c79, head, [0, 0.31, 0.5], "avatar", 2).scale.set(1.05, 0.85, 1);
-  for (const s of [-1, 1]) sphere(0.022, 0x8a5a45, head, [s * 0.035, 0.28, 0.5], undefined, 1);
-  sphere(0.07, 0xb8705e, head, [0, 0.17, 0.435], "avatar", 2).scale.set(1.3, 0.3, 0.5);
-  sphere(0.07, 0xc47c6a, head, [0, 0.135, 0.435], "avatar", 2).scale.set(1.15, 0.32, 0.5);
-  box(0.16, 0.012, 0.03, 0x7a4538, head, [0, 0.153, 0.45]);
+  sphere(0.055, SKIN_SHADE, head, [0, 0.32, 0.485], "avatar", 2);
+  box(0.13, 0.018, 0.03, 0x8a5443, head, [0, 0.16, 0.445], "avatar");
 
-  // Round tortoiseshell glasses with nose pads and temples.
+  // Round tortoiseshell glasses: two rims, a bridge and the temples.
   const frameMat = mat(FRAME, { roughness: 0.5 });
-  const frameLight = mat(FRAME_LIGHT, { roughness: 0.5 });
-  const lensMat = new THREE.MeshStandardMaterial({ color: 0xcfe9ff, transparent: true, opacity: 0.06, roughness: 0.05, depthWrite: false });
   for (const s of [-1, 1]) {
-    add(new THREE.TorusGeometry(0.17, 0.026, 10, 28), frameMat, head, [s * 0.2, 0.44, 0.47]);
-    const accent = add(new THREE.TorusGeometry(0.17, 0.014, 6, 14, Math.PI * 0.8), frameLight, head, [s * 0.2, 0.44, 0.482]);
-    accent.rotation.z = s > 0 ? 0.9 : 2.2;
-    add(new THREE.CircleGeometry(0.165, 24), lensMat, head, [s * 0.2, 0.44, 0.471]);
+    add(new THREE.TorusGeometry(0.17, 0.024, 10, 32), frameMat, head, [s * 0.2, 0.44, 0.47]);
     const temple = add(new THREE.BoxGeometry(0.026, 0.026, 0.5), frameMat, head, [s * 0.395, 0.46, 0.22]);
     temple.rotation.y = s * -0.1;
-    add(new THREE.SphereGeometry(0.014, 6, 6), mat(0xd8d2c8), head, [s * 0.1, 0.38, 0.47]);
   }
   add(new THREE.TorusGeometry(0.05, 0.016, 6, 12, Math.PI), frameMat, head, [0, 0.45, 0.47]);
 
-  // Curly hair: a cap, sideburns and instanced curls in two tones and three sizes.
-  const hairMat = mat(HAIR, { roughness: 0.95 });
+  // Simple curly hair: a smooth cap with a few even, rounded lobes in one tone.
+  const hairMat = mat(HAIR, { roughness: 0.9 });
   const cap = add(new THREE.SphereGeometry(0.535, 28, 16, 0, Math.PI * 2, 0, Math.PI * 0.58), hairMat, head, [0, 0.46, -0.02], "avatar");
   cap.scale.set(0.95, 1.1, 1.0);
   cap.rotation.x = -0.42;
-  for (const s of [-1, 1]) add(new THREE.BoxGeometry(0.05, 0.2, 0.06), hairMat, head, [s * 0.4, 0.5, 0.32]);
-  const rand = mulberry32(42);
-  const curls = [];
-  while (curls.length < 120) {
-    const v = new THREE.Vector3(rand() * 2 - 1, rand() * 2 - 1, rand() * 2 - 1);
-    if (v.lengthSq() > 1 || v.lengthSq() < 0.1) continue;
-    v.normalize();
-    const inFace = v.z > 0.3 && v.y < 0.7;
-    if (v.y < -0.2 || inFace || (v.y < 0.1 && v.z > 0)) continue;
-    const tier = rand();
-    const r = tier < 0.5 ? 0.085 : tier < 0.85 ? 0.115 : 0.145;
-    const reach = 0.52 + rand() * 0.05;
-    curls.push([v.x * reach * 0.95, 0.46 + v.y * reach * 1.1, v.z * reach, r, rand() < 0.3]);
+  const lobes = [];
+  const LOBE_POINTS = 44;
+  for (let i = 0; i < LOBE_POINTS; i++) {
+    // Even spiral over the sphere, keeping the crown and back, leaving the face open.
+    const y = 1 - (2 * (i + 0.5)) / LOBE_POINTS;
+    const ring = Math.sqrt(1 - y * y);
+    const x = Math.cos(i * 2.39996) * ring;
+    const z = Math.sin(i * 2.39996) * ring;
+    if (y < -0.1 || (z > 0.25 && y < 0.62)) continue;
+    lobes.push([x * 0.48, 0.46 + y * 0.56, z * 0.51, i % 2 ? 0.16 : 0.185]);
   }
-  for (let i = 0; i < 9; i++) {
-    const a = (i / 8 - 0.5) * 1.7;
-    curls.push([Math.sin(a) * 0.4, 0.79 - Math.abs(a) * 0.13, 0.33 + Math.cos(a) * 0.08, 0.075 + rand() * 0.03, i % 2 === 0]);
-  }
-  const curlMesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshStandardMaterial({ roughness: 0.95 }), curls.length);
-  const dummy = new THREE.Object3D();
-  const tint = new THREE.Color();
-  curls.forEach(([x, y, z, r, light], i) => {
-    dummy.position.set(x, y, z);
-    dummy.scale.set(r, r * 0.9, r);
-    dummy.rotation.set(rand() * 3, rand() * 3, 0);
-    dummy.updateMatrix();
-    curlMesh.setMatrixAt(i, dummy.matrix);
-    curlMesh.setColorAt(i, tint.setHex(light ? HAIR_LIGHT : HAIR));
+  const lobeMesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 2), hairMat, lobes.length);
+  const lobeDummy = new THREE.Object3D();
+  lobes.forEach(([x, y, z, r], i) => {
+    lobeDummy.position.set(x, y, z);
+    lobeDummy.scale.setScalar(r);
+    lobeDummy.updateMatrix();
+    lobeMesh.setMatrixAt(i, lobeDummy.matrix);
   });
-  curlMesh.castShadow = true;
-  curlMesh.userData.part = "avatar";
-  hitMeshes.push(curlMesh);
-  head.add(curlMesh);
+  lobeMesh.castShadow = true;
+  lobeMesh.userData.part = "avatar";
+  hitMeshes.push(lobeMesh);
+  head.add(lobeMesh);
 
   // Over-ear headphones: padded band, sliders, shells, pads and a thin accent ring.
   const phoneMat = mat(0x201e26, { roughness: 0.45, metalness: 0.25 });
@@ -428,11 +402,7 @@ export function createAvatar(palette) {
     rings.forEach((r) => (r.material.emissiveIntensity = 0.7 + Math.max(0, beat) * 0.5));
 
     const blinking = time > state.blinkAt;
-    eyes.forEach(({ eye, lid }) => {
-      lid.position.y = blinking ? 0.0 : 0.075;
-      lid.scale.y = blinking ? 0.95 : 0.22;
-      eye.rotation.y = state.look.x * 0.25;
-    });
+    eyes.forEach((eye) => (eye.scale.y = blinking ? 0.12 : 1.25));
     if (blinking && time > state.blinkAt + 0.13) state.blinkAt = time + 2 + Math.random() * 3;
 
     const waving = time < state.waveUntil;
