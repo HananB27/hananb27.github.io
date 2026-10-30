@@ -4,7 +4,7 @@ A static site (no build step, GitHub Pages) where the portfolio *is* a small 3D 
 
 - **Desktop:** you land straight in the world. Walk the avatar around a floating island, collect the five skill crystals, walk up to a cabinet (one per project) or a kiosk (About, Contact) and press **E** to open it. The header links fast-travel the avatar. **Classic view** in the header switches to the regular scrolling page; the choice is remembered.
 - **Phones and tablets:** a 3D website. The camera and the island's spin follow your scroll; the laptop, crystals, cabinets and kiosks are tappable.
-- **Avatar:** a low-poly character built in code from a reference photo: curly dark hair, round tortoiseshell glasses, black headphones, beige jacket with a corduroy collar over a waffle knit, jeans, white sneakers, laptop with scrolling code. It is stylised, not a scan, and the photo is not in the repo.
+- **Avatar:** a low-poly character built in code from a reference photo: curly dark hair, round tortoiseshell glasses, black headphones, beige jacket with a corduroy collar over a waffle knit, jeans, white sneakers. The laptop rests on one forearm with the screen facing him, so you see the code over his shoulder from behind. It is stylised, not a scan, and the photo is not in the repo.
 
 ## Run
 

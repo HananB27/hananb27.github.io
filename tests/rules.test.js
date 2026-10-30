@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  movePlayer, stepJump, collectSkills, moveToward, nearestWithin, sectionProgress, nearestTurn,
+  movePlayer, stepJump, collectSkills, moveToward, nearestWithin, solveElbow, sectionProgress, nearestTurn,
   ISLAND_RADIUS, WALK_SPEED, JUMP_VELOCITY,
 } from "../js/rules.js";
 
@@ -64,6 +64,19 @@ test("nearestWithin picks the closest point inside reach, otherwise -1", () => {
   const pts = [{ x: 3, z: 0 }, { x: 1, z: 0 }, { x: -1.5, z: 0 }];
   assert.equal(nearestWithin({ x: 0, z: 0 }, pts, 2), 1);
   assert.equal(nearestWithin({ x: 0, z: 9 }, pts, 2), -1);
+});
+
+test("arm IK keeps bone lengths, reaches the target and bends toward the pole", () => {
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+  const shoulder = { x: 0.6, y: 1.7, z: 0 };
+  const target = { x: 0.1, y: 1.27, z: 0.6 };
+  const { elbow, wrist } = solveElbow(shoulder, target, 0.5, 0.58, { x: 1, y: -1, z: 0 });
+  assert.ok(dist(shoulder, elbow) - 0.5 < 1e-9 && dist(shoulder, elbow) - 0.5 > -1e-9);
+  assert.ok(Math.abs(dist(elbow, wrist) - 0.58) < 1e-9);
+  assert.ok(dist(wrist, target) < 1e-9);
+  assert.ok(elbow.x > (shoulder.x + target.x) / 2);
+  const far = solveElbow(shoulder, { x: 9, y: 9, z: 9 }, 0.5, 0.58, { x: 0, y: -1, z: 0 });
+  assert.ok(Math.abs(dist(shoulder, far.wrist) - 1.08) < 1e-3);
 });
 
 test("scroll progress holds on sections and is monotonic", () => {

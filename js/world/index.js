@@ -77,6 +77,10 @@ export function createWorld({ container, sections, hooks, mode: initialMode = "s
   const fill = new THREE.DirectionalLight(0xffe6d0, 1.0);
   fill.position.set(2.5, 3, 10);
   scene.add(fill);
+  // Soft light from behind: in the game the camera usually follows the avatar's back.
+  const back = new THREE.DirectionalLight(0xdfe6f2, 1.5);
+  back.position.set(-2, 5, -10);
+  scene.add(back);
   const rim = new THREE.PointLight(palette.accent, 35, 0, 2);
   rim.position.set(-8, 4, -6);
   scene.add(rim);

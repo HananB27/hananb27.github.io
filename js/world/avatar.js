@@ -1,11 +1,11 @@
 import * as THREE from "../../vendor/three.module.min.js";
-import { smoothstep } from "../rules.js";
+import { smoothstep, solveElbow } from "../rules.js";
 
 /**
  * Hanan's low-poly avatar, authored entirely in code from the reference photo:
  * dark curly hair, round tortoiseshell glasses, black over-ear headphones, a
  * beige jacket with a tan corduroy collar over a cream waffle knit, jeans,
- * white sneakers — and a laptop held up to show its screen. It is a stylised
+ * white sneakers — using a laptop balanced on one forearm, like you would standing up. It is a stylised
  * character, not a scan, and the photo itself is never shipped.
  */
 const SKIN = 0xe0b08e;
@@ -20,6 +20,10 @@ const SNEAKER = 0xf4f0e8;
 const SOLE = 0xd9d3c6;
 const FRAME = 0x4a2a14;
 const DARK = 0x16141c;
+const UPPER_ARM = 0.5;
+const FOREARM = 0.58;
+const LAPTOP_Y = 1.2;
+const ARM_REST = new THREE.Vector3(0, -1, 0);
 
 function mulberry32(seed) {
   return () => {
@@ -274,6 +278,10 @@ export function createAvatar(palette) {
   jacket.scale.z = 0.7;
   const hem = add(new THREE.CylinderGeometry(0.505, 0.505, 0.07, 18), mat(JACKET_SHADE), torso, [0, 0.88, 0], "avatar");
   hem.scale.z = 0.7;
+  // Yoke across the shoulders, so the torso does not end in a flat top.
+  const yoke = add(new THREE.CapsuleGeometry(0.17, 1.14, 6, 14), mat(JACKET), torso, [0, 1.73, -0.08], "avatar");
+  yoke.rotation.z = Math.PI / 2;
+  yoke.scale.set(1, 1, 1.9);
   const knitMat = new THREE.MeshStandardMaterial({ map: knitTexture(), roughness: 0.95 });
   add(new THREE.BoxGeometry(0.34, 0.5, 0.05), knitMat, torso, [0, 1.62, 0.335], "avatar");
   add(new THREE.BoxGeometry(0.3, 0.05, 0.05), knitMat, torso, [0, 0.86, 0.34]);
@@ -282,7 +290,7 @@ export function createAvatar(palette) {
   for (const s of [-1, 1]) {
     box(0.2, 0.17, 0.035, JACKET_SHADE, torso, [s * 0.3, 1.03, 0.345], "avatar").rotation.y = s * -0.35;
     box(0.2, 0.03, 0.04, 0xa89570, torso, [s * 0.3, 1.11, 0.353]).rotation.y = s * -0.35;
-    box(0.012, 0.8, 0.5, JACKET_SHADE, torso, [s * 0.52, 1.3, 0]);
+    box(0.012, 0.8, 0.04, JACKET_SHADE, torso, [s * 0.525, 1.3, 0]);
   }
   const collarMat = new THREE.MeshStandardMaterial({ map: corduroyTexture(), roughness: 1 });
   const collar = add(new THREE.TorusGeometry(0.27, 0.08, 10, 24), collarMat, torso, [0, 1.84, 0.02], "avatar");
@@ -357,33 +365,36 @@ export function createAvatar(palette) {
     sphere(0.17, JACKET, shoulder, [0, 0, 0], "avatar", 2);
     capsule(0.137, 0.3, JACKET, shoulder, [0, -0.25, 0], "avatar");
     const elbow = new THREE.Group();
-    elbow.position.set(0, -0.5, 0);
+    elbow.position.set(0, -UPPER_ARM, 0);
     shoulder.add(elbow);
     sphere(0.125, JACKET_SHADE, elbow, [0, 0, 0], undefined, 1);
     capsule(0.118, 0.26, JACKET, elbow, [0, -0.22, 0], "avatar");
     cyl(0.122, 0.122, 0.09, JACKET_SHADE, elbow, [0, -0.42, 0], 14);
     add(new THREE.CylinderGeometry(0.108, 0.108, 0.07, 14), knitMat, elbow, [0, -0.48, 0]);
     const hand = new THREE.Group();
-    hand.position.set(0, -0.58, 0.02);
+    hand.position.set(0, -FOREARM, 0);
     elbow.add(hand);
     box(0.14, 0.11, 0.07, SKIN, hand, [0, 0, 0], "avatar");
     for (let f = 0; f < 4; f++) {
       const finger = capsule(0.022, 0.07 + (f === 1 || f === 2 ? 0.015 : 0), SKIN, hand, [(f - 1.5) * 0.034, -0.1, 0.012], "avatar");
       finger.rotation.x = -0.35;
     }
-    const thumb = capsule(0.024, 0.06, SKIN, hand, [-s * 0.08, -0.03, 0.03], "avatar");
-    thumb.rotation.set(-0.5, 0, s * 0.7);
-    return { shoulder, elbow };
+    const thumb = capsule(0.024, 0.06, SKIN, hand, [0.08, -0.03, 0.03], "avatar");
+    thumb.rotation.set(-0.5, 0, 0.7);
+    return { shoulder, elbow, hand };
   }
   const armL = makeArm(-1);
   const armR = makeArm(1);
 
   // ---- laptop -------------------------------------------------------------------------------------------
   const laptop = new THREE.Group();
-  laptop.position.set(0, 1.12, 0.78);
+  // Screen faces him: the keyboard is at his chest and the lid's back faces the viewer.
+  laptop.position.set(0, LAPTOP_Y, 0.72);
+  laptop.rotation.y = Math.PI;
+  laptop.scale.setScalar(0.82);
   rig.add(laptop);
-  const shell = mat(0x2b2d36, { roughness: 0.35, metalness: 0.6 });
-  box(1.04, 0.06, 0.72, 0x2b2d36, laptop, [0, 0, 0], "laptop").material = shell;
+  const shell = mat(0x5a606e, { roughness: 0.4, metalness: 0.3 });
+  box(1.04, 0.06, 0.72, 0x5a606e, laptop, [0, 0, 0], "laptop").material = shell;
   const keys = document.createElement("canvas");
   keys.width = 256;
   keys.height = 176;
@@ -405,9 +416,9 @@ export function createAvatar(palette) {
   laptop.add(deck);
   const lid = new THREE.Group();
   lid.position.set(0, 0.03, -0.34);
-  lid.rotation.x = -0.12;
+  lid.rotation.x = -0.22;
   laptop.add(lid);
-  box(1.04, 0.7, 0.045, 0x2b2d36, lid, [0, 0.35, 0], "laptop").material = shell;
+  box(1.04, 0.7, 0.045, 0x5a606e, lid, [0, 0.35, 0], "laptop").material = shell;
   box(1.0, 0.03, 0.05, 0x1c1e25, lid, [0, 0.0, 0.0]);
   const display = createScreen(palette);
   const screenMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.94, 0.58), new THREE.MeshBasicMaterial({ map: display.texture, toneMapped: false }));
@@ -415,9 +426,66 @@ export function createAvatar(palette) {
   screenMesh.userData.part = "laptop";
   hitMeshes.push(screenMesh);
   lid.add(screenMesh);
-  const screenLight = new THREE.PointLight(0xdff7ff, 0.9, 3, 2);
-  screenLight.position.set(0, 0.5, 0.7);
+  // Small logo on the back of the lid, the side everyone else sees.
+  const logoCanvas = document.createElement("canvas");
+  logoCanvas.width = 256;
+  logoCanvas.height = 128;
+  const lg = logoCanvas.getContext("2d");
+  lg.font = "700 96px Inter, system-ui, sans-serif";
+  lg.textAlign = "center";
+  lg.textBaseline = "middle";
+  lg.fillStyle = palette.text;
+  lg.fillText("hb", 112, 68);
+  lg.fillStyle = palette.accent;
+  lg.fillText(".", 188, 68);
+  const logoTex = new THREE.CanvasTexture(logoCanvas);
+  logoTex.colorSpace = THREE.SRGBColorSpace;
+  const logo = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.15), new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, toneMapped: false }));
+  logo.position.set(0, 0.36, -0.024);
+  logo.rotation.y = Math.PI;
+  lid.add(logo);
+  const screenLight = new THREE.PointLight(0xdff7ff, 0.35, 2.5, 2);
+  screenLight.position.set(0, 0.55, 0.15);
   laptop.add(screenLight);
+
+  // Puts the wrist on `target` and turns the hand: `palm` is where the palm faces,
+  // `fingers` where the fingers point. Everything here is in the rig's space.
+  const ik = {
+    upper: new THREE.Vector3(),
+    lower: new THREE.Vector3(),
+    chain: new THREE.Quaternion(),
+    x: new THREE.Vector3(),
+    y: new THREE.Vector3(),
+    z: new THREE.Vector3(),
+    basis: new THREE.Matrix4(),
+    hand: new THREE.Quaternion(),
+  };
+  function reach(arm, target, pole, palm, fingers) {
+    const { elbow, wrist } = solveElbow(arm.shoulder.position, target, UPPER_ARM, FOREARM, pole);
+    ik.upper.copy(elbow).sub(arm.shoulder.position).normalize();
+    arm.shoulder.quaternion.setFromUnitVectors(ARM_REST, ik.upper);
+    ik.lower.copy(wrist).sub(elbow).normalize().applyQuaternion(ik.chain.copy(arm.shoulder.quaternion).invert());
+    arm.elbow.quaternion.setFromUnitVectors(ARM_REST, ik.lower);
+    ik.z.copy(palm).normalize();
+    ik.y.copy(fingers).negate().addScaledVector(ik.z, fingers.dot(ik.z)).normalize();
+    ik.x.crossVectors(ik.y, ik.z);
+    ik.hand.setFromRotationMatrix(ik.basis.makeBasis(ik.x, ik.y, ik.z));
+    ik.chain.copy(arm.shoulder.quaternion).multiply(arm.elbow.quaternion).invert();
+    arm.hand.quaternion.copy(ik.chain).multiply(ik.hand);
+  }
+  const POSE = {
+    // Left forearm cradles the laptop, palm up under the base.
+    leftWrist: new THREE.Vector3(-0.28, LAPTOP_Y - 0.09, 0.7),
+    leftPole: new THREE.Vector3(-1, -0.9, -0.1),
+    leftPalm: new THREE.Vector3(0, 1, 0),
+    leftFingers: new THREE.Vector3(0.3, 0, 1),
+    // Right hand rests on the keyboard, palm down.
+    rightWrist: new THREE.Vector3(0.1, LAPTOP_Y + 0.08, 0.58),
+    rightPole: new THREE.Vector3(1, -0.9, -0.1),
+    rightPalm: new THREE.Vector3(0, -1, 0.05),
+    rightFingers: new THREE.Vector3(-0.4, -0.05, 1),
+  };
+  const wristTarget = new THREE.Vector3();
 
   // ---- animation ------------------------------------------------------------------------------------------
   const state = { waveUntil: 0, blinkAt: 2.5, look: new THREE.Vector2(), stride: 0, walk: 0 };
@@ -439,27 +507,31 @@ export function createAvatar(palette) {
     state.look.x += ((look?.x ?? 0) - state.look.x) * Math.min(1, dt * 6);
     state.look.y += ((look?.y ?? 0) - state.look.y) * Math.min(1, dt * 6);
     head.rotation.y = state.look.x * 0.55;
-    head.rotation.x = -state.look.y * 0.3 + beat * 0.02;
+    head.rotation.x = 0.16 - state.look.y * 0.3 + beat * 0.02; // eyes on the screen
     rings.forEach((r) => (r.material.emissiveIntensity = 0.7 + Math.max(0, beat) * 0.5));
 
     const blinking = time > state.blinkAt;
     eyes.forEach((eye) => (eye.scale.y = blinking ? 0.12 : 1.25));
     if (blinking && time > state.blinkAt + 0.13) state.blinkAt = time + 2 + Math.random() * 3;
 
+    const bob = reduced ? 0 : Math.sin(t * 2) * 0.01;
+    laptop.position.y = LAPTOP_Y + bob;
+    reach(armL, wristTarget.copy(POSE.leftWrist).setY(POSE.leftWrist.y + bob), POSE.leftPole, POSE.leftPalm, POSE.leftFingers);
     const waving = time < state.waveUntil;
-    const typing = reduced ? 0 : Math.sin(t * 17) * 0.03;
-    armL.shoulder.rotation.set(-0.42, 0, -0.12 + typing);
-    armL.elbow.rotation.set(-1.05 + typing, 0, 0);
     if (waving) {
       armR.shoulder.rotation.set(0, 0, 2.55);
       armR.elbow.rotation.set(0, 0, 0.4 + Math.sin(time * 14) * 0.45);
-      laptop.rotation.z += (-0.1 - laptop.rotation.z) * Math.min(1, dt * 8);
+      armR.hand.rotation.set(0, 0, 0);
     } else {
-      armR.shoulder.rotation.set(-0.42, 0, 0.12 - typing);
-      armR.elbow.rotation.set(-1.05 - typing, 0, 0);
-      laptop.rotation.z += (0 - laptop.rotation.z) * Math.min(1, dt * 8);
+      // Slow drift across the keys with a light tap, so it reads as typing.
+      const tap = reduced ? 0 : Math.abs(Math.sin(t * 9)) * 0.012;
+      const drift = reduced ? 0 : Math.sin(t * 1.3) * 0.05;
+      wristTarget.copy(POSE.rightWrist);
+      wristTarget.x += drift;
+      wristTarget.y += bob + tap;
+      reach(armR, wristTarget, POSE.rightPole, POSE.rightPalm, POSE.rightFingers);
     }
-    laptop.position.y = 1.12 + (reduced ? 0 : Math.sin(t * 2) * 0.01);
+    laptop.rotation.z += ((waving ? -0.06 : 0) - laptop.rotation.z) * Math.min(1, dt * 8);
     display.update(time);
   }
 

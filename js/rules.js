@@ -94,6 +94,27 @@ export function nearestWithin(position, points, reach) {
 }
 
 /**
+ * Two-bone IK for an arm: where the elbow goes so the wrist reaches `target`,
+ * bending toward `pole`. Points are {x, y, z}; a target out of reach is clamped.
+ */
+export function solveElbow(shoulder, target, upper, lower, pole) {
+  const add = (a, b, k) => ({ x: a.x + b.x * k, y: a.y + b.y * k, z: a.z + b.z * k });
+  const dot = (a, b) => a.x * b.x + a.y * b.y + a.z * b.z;
+  const to = add(target, shoulder, -1);
+  const length = Math.sqrt(dot(to, to)) || 1;
+  const dir = add({ x: 0, y: 0, z: 0 }, to, 1 / length);
+  const distance = clamp(length, Math.abs(upper - lower) + 1e-4, upper + lower - 1e-4);
+  const along = (upper * upper - lower * lower + distance * distance) / (2 * distance);
+  const height = Math.sqrt(Math.max(0, upper * upper - along * along));
+  const side = add(pole, dir, -dot(pole, dir));
+  const sideLength = Math.sqrt(dot(side, side)) || 1;
+  return {
+    elbow: add(add(shoulder, dir, along), side, height / sideLength),
+    wrist: add(shoulder, dir, distance),
+  };
+}
+
+/**
  * Scroll progress through a list of sections, as a float in [0, n-1].
  * Each boundary eases over a window centred a little above the next section's
  * top, so the camera holds on a section while you read it and swings between
